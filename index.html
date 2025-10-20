@@ -160,89 +160,15 @@
 
 
 <script>
+// ✅ REQ 1: Main app logic is wrapped to be called by the correct event listener.
+function startApp() {
 
-// Variable para asegurar que el código se ejecute una sola vez
-let isAppReady = false; 
-
-// --- NUEVAS FUNCIONES DE CORDOVA/PLUGINS (FILE) ---
-
-// Función auxiliar para convertir base64 a Blob
-const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
-    const byteCharacters = atob(b64Data);
-    const byteArrays = [];
-
-    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-        const slice = byteCharacters.slice(offset, offset + sliceSize);
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
-    }
-    return new Blob(byteArrays, { type: contentType });
-};
-
-const fileError = (e) => {
-    console.error("Error en File System:", e.code, e);
-    alert('❌ Error de permisos de almacenamiento o sistema de archivos. Código: ' + e.code);
-};
-
-// Función principal para guardar la imagen del canvas en la galería/descargas
-const saveTicketImage = (dataURL) => {
-    // Solo intenta guardar si cordova y el plugin File están disponibles
-    if (!window.cordova || !window.resolveLocalFileSystemURL) {
-        console.error("Plugins de Cordova (File) no disponibles. Fallback a descarga web.");
-        
-        // Fallback para navegador web (Descarga directa)
-        const link = document.createElement('a');
-        link.href = dataURL;
-        link.download = `Klenos-Pedido-${currentOrderNumber}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        return; 
-    }
-
-    // Usar la ruta de Descargas en Android (Requiere permisos READ/WRITE_EXTERNAL_STORAGE)
-    const folder = cordova.file.externalRootDirectory + 'Download/'; 
-    const fileName = `Klenos-Pedido-${currentOrderNumber}.png`;
-
-    window.resolveLocalFileSystemURL(folder, (dirEntry) => {
-        dirEntry.getFile(fileName, { create: true }, (fileEntry) => {
-            const base64Data = dataURL.split(',')[1];
-            const blob = b64toBlob(base64Data, 'image/png');
-
-            fileEntry.createWriter((fileWriter) => {
-                fileWriter.onwriteend = () => {
-                    alert(`✅ Ticket guardado en la carpeta de Descargas: ${fileName}`);
-                    console.log('Ticket guardado en:', fileEntry.toURL());
-                };
-                fileWriter.onerror = (e) => {
-                    alert('❌ Error al guardar el ticket. Revisa los permisos: ' + e.toString());
-                    console.error('Error al guardar el ticket:', e);
-                };
-                fileWriter.write(blob);
-            }, fileError);
-        }, fileError);
-    }, fileError);
-};
-
-// --- FIN NUEVAS FUNCIONES DE CORDOVA/PLUGINS ---
-
-// Función principal de inicialización que contiene TODA la lógica de la webapp
-const initApp = () => {
-    if (isAppReady) return;
-    isAppReady = true;
-
-    // TODO EL CÓDIGO ORIGINAL DEL EVENTO DOMContentLoaded COMIENZA AQUÍ:
-    
     const RESTAURANT_NAME = "K’Leños Sabor 100% Valluno";
     const WHATSAPP_NUMBER = "573216350541";
     
     const LOCATION_DATA = {
         address: "Cl. 75a Nte. #2-110, Acopi, Cali, Valle del Cauca, Colombia",
-        map_url: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497.80022739915904!2d-76.50136182453736!3d3.4940402337368077!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e30a10038b99d4f%3A0x8017b7164bfb50f4!2sK'Le%C3%B1os%20-%20Sabor%20100%25%20Valluno!5e0!3m2!1ses-419!2sco!4v1760857589673!5m2!1ses-419!2sco" 
+        map_url: "https://www.google.com/maps/embed/v1/place" // Corrected embed URL base
     };
 
     const SOCIAL_LINKS = {
@@ -259,15 +185,8 @@ const initApp = () => {
 
     const PAYMENT_METHODS = [ { name: "Efectivo", icon: "💵" }, { name: "Nequi", icon: "💳" }, { name: "Bancolombia", icon: "💳" }];
 
-    // NUEVO: Horario de Operación (Domingo=0, Lunes=1, ..., Sábado=6)
     const OPERATING_HOURS = [
-        { day: 0, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Domingo (5 PM - 11 PM)
-        { day: 1, start: null, end: null, closeMsg: "Mañana a las 5:00 PM" },      // Lunes (Cerrado)
-        { day: 2, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Martes (5 PM - 11 PM)
-        { day: 3, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Miércoles (5 PM - 11 PM)
-        { day: 4, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Jueves (5 PM - 11 PM)
-        { day: 5, start: '17:00', end: '24:00', closeMsg: "Hoy a las 12:00 AM" }, // Viernes (5 PM - 12 AM)
-        { day: 6, start: '17:00', end: '24:00', closeMsg: "Hoy a las 12:00 AM" }  // Sábado (5 PM - 12 AM)
+        { day: 0, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, { day: 1, start: null, end: null, closeMsg: "Mañana a las 5:00 PM" }, { day: 2, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, { day: 3, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, { day: 4, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, { day: 5, start: '17:00', end: '24:00', closeMsg: "Hoy a las 12:00 AM" }, { day: 6, start: '17:00', end: '24:00', closeMsg: "Hoy a las 12:00 AM" }
     ];
 
     let cart = [];
@@ -278,8 +197,6 @@ const initApp = () => {
     let selectedPayment = null;
     let currentOrderNumber = null;
     let currentFilter = "all";
-    
-    // NUEVO: Variables de estado para la programación
     let isScheduled = false;
 
     const menuView = document.getElementById('menu-view');
@@ -301,660 +218,221 @@ const initApp = () => {
     const sendOrderBtn = document.getElementById('send-order-btn');
     const newOrderBtn = document.getElementById('new-order-btn');
     const locationBtn = document.getElementById('location-btn');
+    const openMapsBtn = document.getElementById('open-maps-btn');
     const copyAddressBtn = document.getElementById('copy-address-btn');
     const navMenuBtn = document.getElementById('nav-menu-btn');
     const navCartBtn = document.getElementById('nav-cart-btn');
     const navFooter = document.getElementById('nav-footer');
     const filtersSection = document.getElementById('filters-section');
     const categoryBtns = document.querySelectorAll('.category-btn');
-
-    // NUEVOS SELECTORES
     const operatingStatusBox = document.getElementById('operating-status-box');
     const statusIcon = document.getElementById('status-icon');
     const statusMessageMain = document.getElementById('status-message-main');
     const statusMessageSecondary = document.getElementById('status-message-secondary');
-    
     const deliveryTimeNowOption = document.getElementById('delivery-time-now-option');
     const deliveryTimeScheduleOption = document.getElementById('delivery-time-schedule-option');
     const scheduleInputContainer = document.getElementById('schedule-input-container');
     const scheduledDateInput = document.getElementById('scheduled-date-input');
     const scheduledTimeInput = document.getElementById('scheduled-time-input');
     const scheduleWarning = document.getElementById('schedule-warning');
-
-    // --- NUEVAS FUNCIONES DE FORMATO DE PRECIOS ---
-
-    const formatMenuPrice = (price) => {
-        return `$${price.toFixed(1)}K`; 
-    };
-
-    const formatRealAmount = (realAmount) => {
-        return `$${realAmount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-    };
-
-    // --- LÓGICA DE HORARIO DE ATENCIÓN ---
     
+    // ✅ REQ 3.A: Helper function to convert Data URL to Blob
+    const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
+        const byteCharacters = atob(b64Data.split(',')[1]);
+        const byteArrays = [];
+        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+            const slice = byteCharacters.slice(offset, offset + sliceSize);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+        return new Blob(byteArrays, { type: contentType });
+    };
+
+    // ✅ REQ 3.B: Main function to save the ticket image using cordova-plugin-file
+    const saveTicketImage = (dataURL, fileName) => {
+        // Check if running in Cordova and the file plugin is available
+        if (window.cordova && window.resolveLocalFileSystemURL) {
+            const blob = b64toBlob(dataURL, 'image/png');
+            const storagePath = cordova.file.externalRootDirectory + 'Download/';
+
+            window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
+                dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
+                    fileEntry.createWriter((fileWriter) => {
+                        fileWriter.onwriteend = () => {
+                            console.log(`Ticket saved successfully to: ${fileEntry.toURL()}`);
+                            // Optionally show a native toast notification
+                        };
+                        fileWriter.onerror = (e) => {
+                            console.error(`Failed file write: ${e.toString()}`);
+                            alert('Error: No se pudo guardar el tiquete.');
+                        };
+                        fileWriter.write(blob);
+                    });
+                }, (err) => console.error("GetFile error: ", err));
+            }, (err) => console.error("ResolveFileSystem error: ", err));
+        } else {
+            // Fallback for standard browsers
+            console.log("Cordova File plugin not found. Using browser download.");
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = dataURL;
+            link.click();
+        }
+    };
+
+    const formatMenuPrice = (price) => `$${price.toFixed(1)}K`;
+    const formatRealAmount = (realAmount) => `$${realAmount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
     const getOperatingStatus = (checkTime) => {
-        const now = checkTime || new Date();
-        const day = now.getDay(); 
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
-
-        const schedule = OPERATING_HOURS[day];
-
-        // Lunes cerrado
-        if (!schedule.start) {
-            // Encuentra el próximo día abierto (Martes=2, si hoy es Lunes=1)
-            let nextDayIndex = 2; 
-            if(day === 6) nextDayIndex = 0; // Si hoy es sábado, abre mañana (Domingo)
-            const nextOpenDay = new Date(now);
-            nextOpenDay.setDate(now.getDate() + (nextDayIndex - day + 7) % 7);
-            const nextDayName = nextOpenDay.toLocaleDateString('es-ES', { weekday: 'long' });
-            
-            return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: `${nextDayName} a las 5:00 PM` };
-        }
-
-        const [startHour, startMinute] = schedule.start.split(':').map(Number);
-        const [endHour, endMinute] = schedule.end.split(':').map(Number);
-        
-        const currentTimeInMinutes = hours * 60 + minutes;
-        const startTimeInMinutes = startHour * 60 + startMinute;
-        // 24:00 es 1440 minutos (medianoche)
-        const endTimeInMinutes = (endHour === 24 ? 24 * 60 : endHour * 60) + endMinute;
-
-        if (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes) {
-            return { isOpen: true, status: "ABIERTO", nextClose: `Cierre: ${schedule.closeMsg}` };
-        } else if (currentTimeInMinutes < startTimeInMinutes) {
-            return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: `Hoy a las ${schedule.start.replace(':00', '').replace('17:00', '5:00 PM')}` };
-        } else {
-            // Cerrado después del horario de servicio
-            const nextDayIndex = (day + 1) % 7;
-            const nextOpenDay = new Date(now);
-            nextOpenDay.setDate(now.getDate() + 1);
-            
-            let nextOpen = OPERATING_HOURS[nextDayIndex].start ? nextOpenDay.toLocaleDateString('es-ES', { weekday: 'long' }) + ' a las 5:00 PM' : 'Martes a las 5:00 PM'; // Caso Lunes (Domingo -> Lunes cerrado)
-            
-            return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: nextOpen };
-        }
+        const now = checkTime || new Date(); const day = now.getDay(); const hours = now.getHours(); const minutes = now.getMinutes(); const schedule = OPERATING_HOURS[day]; if (!schedule.start) { let nextDayIndex = 2; if(day === 6) nextDayIndex = 0; const nextOpenDay = new Date(now); nextOpenDay.setDate(now.getDate() + (nextDayIndex - day + 7) % 7); const nextDayName = nextOpenDay.toLocaleDateString('es-ES', { weekday: 'long' }); return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: `${nextDayName} a las 5:00 PM` }; } const [startHour, startMinute] = schedule.start.split(':').map(Number); const [endHour, endMinute] = schedule.end.split(':').map(Number); const currentTimeInMinutes = hours * 60 + minutes; const startTimeInMinutes = startHour * 60 + startMinute; const endTimeInMinutes = (endHour === 24 ? 24 * 60 : endHour * 60) + endMinute; if (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes) { return { isOpen: true, status: "ABIERTO", nextClose: `Cierre: ${schedule.closeMsg}` }; } else if (currentTimeInMinutes < startTimeInMinutes) { return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: `Hoy a las ${schedule.start.replace(':00', '').replace('17:00', '5:00 PM')}` }; } else { const nextDayIndex = (day + 1) % 7; const nextOpenDay = new Date(now); nextOpenDay.setDate(now.getDate() + 1); let nextOpen = OPERATING_HOURS[nextDayIndex].start ? nextOpenDay.toLocaleDateString('es-ES', { weekday: 'long' }) + ' a las 5:00 PM' : 'Martes a las 5:00 PM'; return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: nextOpen }; }
     };
-
     const updateOperatingStatusDisplay = () => {
-        const status = getOperatingStatus();
-        operatingStatusBox.className = 'p-3 border-2 rounded-xl text-center shadow-lg mx-3 mt-3'; // Reset classes
-        
-        if (status.isOpen) {
-            operatingStatusBox.classList.add('bg-green-100', 'border-2', 'border-green-500');
-            statusIcon.textContent = '✅';
-            statusMessageMain.textContent = `¡Estamos ${status.status} ahora! Haz tu pedido.`;
-            statusMessageSecondary.textContent = status.nextClose;
-        } else {
-            operatingStatusBox.classList.add('bg-yellow-100', 'border-2', 'border-yellow-600');
-            statusIcon.textContent = '🌤️🌥️☁️🌧️☁️🌥️🌤️';
-            statusMessageMain.textContent = `¡Hola! ${status.status}`;
-            statusMessageSecondary.textContent = `Abrimos ${status.nextOpen}. ¡Aún puedes programar tu pedido para que sea de los primeros! 😉.`;
-        }
+        const status = getOperatingStatus(); operatingStatusBox.className = 'p-3 border-2 rounded-xl text-center shadow-lg mx-3 mt-3'; if (status.isOpen) { operatingStatusBox.classList.add('bg-green-100', 'border-2', 'border-green-500'); statusIcon.textContent = '✅'; statusMessageMain.textContent = `¡Estamos ${status.status} ahora! Haz tu pedido.`; statusMessageSecondary.textContent = status.nextClose; } else { operatingStatusBox.classList.add('bg-yellow-100', 'border-2', 'border-yellow-600'); statusIcon.textContent = '🌤️🌥️☁️🌧️☁️🌥️🌤️'; statusMessageMain.textContent = `¡Hola! ${status.status}`; statusMessageSecondary.textContent = `Abrimos ${status.nextOpen}. ¡Aún puedes programar tu pedido para que sea de los primeros! 😉.`; }
     };
-
     const isScheduledTimeValid = (date, time) => {
-        if (!date || !time) return false;
-        
-        const scheduledDateTime = new Date(`${date}T${time}:00`);
-        const scheduledDay = scheduledDateTime.getDay();
-        const scheduledHours = scheduledDateTime.getHours();
-        const scheduledMinutes = scheduledDateTime.getMinutes();
-        
-        const schedule = OPERATING_HOURS[scheduledDay];
-        
-        if (!schedule.start) return false;
-
-        const [startHour, startMinute] = schedule.start.split(':').map(Number);
-        const [endHour, endMinute] = schedule.end.split(':').map(Number);
-        
-        const scheduledTimeInMinutes = scheduledHours * 60 + scheduledMinutes;
-        const startTimeInMinutes = startHour * 60 + startMinute;
-        const endTimeInMinutes = (endHour === 24 ? 24 * 60 : endHour * 60) + endMinute;
-
-        return scheduledTimeInMinutes >= startTimeInMinutes && scheduledTimeInMinutes < endTimeInMinutes;
+        if (!date || !time) return false; const scheduledDateTime = new Date(`${date}T${time}:00`); const scheduledDay = scheduledDateTime.getDay(); const scheduledHours = scheduledDateTime.getHours(); const scheduledMinutes = scheduledDateTime.getMinutes(); const schedule = OPERATING_HOURS[scheduledDay]; if (!schedule.start) return false; const [startHour, startMinute] = schedule.start.split(':').map(Number); const [endHour, endMinute] = schedule.end.split(':').map(Number); const scheduledTimeInMinutes = scheduledHours * 60 + scheduledMinutes; const startTimeInMinutes = startHour * 60 + startMinute; const endTimeInMinutes = (endHour === 24 ? 24 * 60 : endHour * 60) + endMinute; return scheduledTimeInMinutes >= startTimeInMinutes && scheduledTimeInMinutes < endTimeInMinutes;
     };
-
     const checkScheduleInputs = () => {
-        const date = scheduledDateInput.value;
-        const time = scheduledTimeInput.value;
-        
-        if (isScheduled && date && time) {
-            const isValid = isScheduledTimeValid(date, time);
-            if (!isValid) {
-                scheduleWarning.classList.remove('hidden');
-            } else {
-                scheduleWarning.classList.add('hidden');
-            }
-            return isValid;
-        }
-        
-        scheduleWarning.classList.add('hidden');
-        return true;
+        const date = scheduledDateInput.value; const time = scheduledTimeInput.value; if (isScheduled && date && time) { const isValid = isScheduledTimeValid(date, time); if (!isValid) { scheduleWarning.classList.remove('hidden'); } else { scheduleWarning.classList.add('hidden'); } return isValid; } scheduleWarning.classList.add('hidden'); return true; 
     };
-    
-    // --- FIN LÓGICA DE HORARIO DE ATENCIÓN ---
-
     const renderMenu = () => {
-        productList.innerHTML = '';
-        const f = currentFilter === 'all' ? MENU_ITEMS : MENU_ITEMS.filter(i => i.category === currentFilter);
-        
-        if(f.length === 0){
-            productList.innerHTML = `<p class="text-center text-gray-500 col-span-1">No hay productos en esta categoría.</p>`;
-            return;
-        }
-
-        f.forEach(i => {
-            const c = document.createElement('div');
-            c.className = "bg-white border-2 border-black rounded-lg p-3 flex justify-between items-center shadow-md";
-            c.innerHTML = `
-                <div class="flex-1 pr-2">
-                    <h3 class="text-base font-bold">${i.name}</h3>
-                    <p class="text-gray-800 font-semibold text-sm">${formatMenuPrice(i.price)}</p>
-                </div>
-                <button data-id="${i.id}" class="add-to-cart-btn bg-yellow-400 text-black font-bold py-1.5 px-3 rounded-full text-sm transform hover:scale-105 transition-transform duration-200">
-                    + Agregar
-                </button>
-            `;
-            productList.appendChild(c);
-        });
+        productList.innerHTML = ''; const f = currentFilter === 'all' ? MENU_ITEMS : MENU_ITEMS.filter(i => i.category === currentFilter); if(f.length === 0){ productList.innerHTML = `<p class="text-center text-gray-500 col-span-1">No hay productos en esta categoría.</p>`; return; } f.forEach(i => { const c = document.createElement('div'); c.className = "bg-white border-2 border-black rounded-lg p-3 flex justify-between items-center shadow-md"; c.innerHTML = `<div class="flex-1 pr-2"><h3 class="text-base font-bold">${i.name}</h3><p class="text-gray-800 font-semibold text-sm">${formatMenuPrice(i.price)}</p></div><button data-id="${i.id}" class="add-to-cart-btn bg-red-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transform hover:scale-110 transition-transform text-sm">+ Agregar</button>`; productList.appendChild(c); });
     };
-
-    const addToCart = (productId) => {
-        const product = MENU_ITEMS.find(i => i.id == productId);
-        if (product) {
-            const existingItem = cart.find(item => item.id === product.id);
-            if (existingItem) {
-                existingItem.quantity++;
-            } else {
-                cart.push({ ...product, quantity: 1 });
-            }
-        }
-        updateCartDisplay();
+    const renderCart = () => {
+        cartItemsContainer.innerHTML = ''; if (cart.length === 0) { emptyCartMessage.classList.remove('hidden'); cartItemsContainer.classList.add('hidden'); } else { emptyCartMessage.classList.add('hidden'); cartItemsContainer.classList.remove('hidden'); cart.forEach(i => { const realPrice = i.price * 1000; const s = realPrice * i.quantity; const e = document.createElement('div'); e.className = "bg-gray-50 border border-gray-200 rounded-lg p-2.5"; e.innerHTML = `<div class="flex justify-between items-start"><div><p class="font-bold text-sm">${i.name}</p><p class="text-xs text-gray-600">${formatRealAmount(realPrice)} c/u</p></div><p class="font-bold text-base text-red-600">${formatRealAmount(s)}</p></div><div class="flex items-center justify-between mt-2"><div class="flex items-center space-x-2"><button data-id="${i.id}" class="quantity-change-btn bg-gray-200 w-7 h-7 rounded-full font-bold text-base">-</button><span class="font-bold w-7 text-center text-sm">${i.quantity}</span><button data-id="${i.id}" class="quantity-change-btn bg-gray-200 w-7 h-7 rounded-full font-bold text-base">+</button><button data-id="${i.id}" class="remove-item-btn text-gray-500 hover:text-red-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div></div><textarea data-id="${i.id}" class="note-input w-full mt-2 p-2 border border-gray-300 rounded-lg text-xs" placeholder="Indicaciones especiales (ej: sin cebolla)...">${i.note || ''}</textarea>`; cartItemsContainer.appendChild(e); }); } updateCartTotal(); updateCartCount();
     };
-
-    const removeFromCart = (productId) => {
-        const itemIndex = cart.findIndex(item => item.id == productId);
-        if (itemIndex > -1) {
-            cart.splice(itemIndex, 1);
-        }
-        updateCartDisplay();
-    };
-
-    const updateQuantity = (productId, change) => {
-        const item = cart.find(item => item.id == productId);
-        if (item) {
-            item.quantity += change;
-            if (item.quantity <= 0) {
-                removeFromCart(productId);
-            }
-        }
-        updateCartDisplay();
-    };
-
-    const calculateTotal = () => {
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        // Multiplicar por 1000 para obtener el valor real en pesos (de $X.XK a $X,000)
-        return total * 1000;
-    };
-
-    const updateCartDisplay = () => {
-        cartItemsContainer.innerHTML = '';
-        const total = calculateTotal();
-        
-        if (cart.length === 0) {
-            emptyCartMessage.classList.remove('hidden');
-            sendOrderBtn.disabled = true;
-            sendOrderBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
-            sendOrderBtn.classList.remove('bg-green-500');
-        } else {
-            emptyCartMessage.classList.add('hidden');
-            sendOrderBtn.disabled = false;
-            sendOrderBtn.classList.add('bg-green-500');
-            sendOrderBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-        }
-        
-        cartTotalEl.textContent = formatRealAmount(total);
-        cartCountEl.textContent = cart.length;
-        if (cart.length > 0) {
-            cartCountEl.classList.remove('hidden');
-        } else {
-            cartCountEl.classList.add('hidden');
-        }
-
-        cart.forEach(item => {
-            const itemTotal = item.price * item.quantity * 1000;
-            const c = document.createElement('div');
-            c.className = "bg-white border-2 border-black rounded-lg p-3 flex justify-between items-center shadow-sm";
-            c.innerHTML = `
-                <div class="flex-1 pr-2">
-                    <h3 class="text-sm font-bold">${item.name}</h3>
-                    <p class="text-gray-700 text-xs">${formatRealAmount(itemTotal)}</p>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button data-id="${item.id}" data-action="decrease" class="cart-quantity-btn w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold">-</button>
-                    <span class="font-bold text-sm w-4 text-center">${item.quantity}</span>
-                    <button data-id="${item.id}" data-action="increase" class="cart-quantity-btn w-6 h-6 bg-green-500 text-white rounded-full text-xs font-bold">+</button>
-                </div>
-            `;
-            cartItemsContainer.appendChild(c);
-        });
-    };
-    
     const renderPaymentMethods = () => {
-        paymentMethodsContainer.innerHTML = '';
-        PAYMENT_METHODS.forEach(method => {
-            const btn = document.createElement('button');
-            btn.dataset.value = method.name;
-            btn.className = `payment-option w-full text-left p-3 border-2 border-gray-300 rounded-lg flex items-center space-x-3 transition-all ${method.name === 'Efectivo' ? 'border-yellow-400 border-4' : ''}`;
-            btn.innerHTML = `<span class="text-xl">${method.icon}</span><span class="font-semibold text-sm">${method.name}</span>`;
-            paymentMethodsContainer.appendChild(btn);
-        });
-        selectedPayment = 'Efectivo'; // Default
+        paymentMethodsContainer.innerHTML = ''; PAYMENT_METHODS.forEach(m => { const b = document.createElement('button'); b.dataset.value = m.name; b.className = 'payment-option w-full text-left p-2.5 border-2 border-gray-300 rounded-lg flex items-center space-x-2 transition-all'; b.innerHTML = `<span class="text-lg">${m.icon}</span><span class="font-semibold text-sm">${m.name}</span>`; paymentMethodsContainer.appendChild(b); });
+    };
+    const renderSocialLinks = () => {
+        const container = document.getElementById('social-links-container'); container.innerHTML = ` <a href="${SOCIAL_LINKS.instagram}" target="_blank" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.584.069-4.85c.149-3.225 1.664 4.771 4.919-4.919C8.416 2.175 8.796 2.163 12 2.163m0-2.163C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98C15.667.014 15.259 0 12 0zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/></svg></a> <a href="${SOCIAL_LINKS.facebook}" target="_blank" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a> <a href="${SOCIAL_LINKS.whatsapp}" target="_blank" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99 0-3.903-.52-5.687-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.267.655 4.398 1.803 6.182l-.341 1.236 1.254-.328zM9.062 7.032c-.092-.158-.297-.184-.452-.184-.132 0-.279.006-.411.006-.151 0-.393.072-.601.297-.229.252-.866 1.011-.866 2.474s.885 2.868 1.004 3.064c.124.19 1.764 2.951 4.298 4.251 2.108 1.086 2.857.944 3.482.903.729-.048 1.503-.615 1.711-1.206.212-.604.212-1.115.152-1.233-.06-.124-.216-.19-.435-.318s-1.29-.714-1.494-.812c-.204-.099-.351-.158-.498.158-.146.315-.563.714-.689.869-.126.152-.252.179-.47.065-.218-.113-1.002-.41-1.892-1.285-.712-.689-1.227-1.688-1.353-1.969-.124-.282-.016-.443.138-.59.138-.132.302-.351.452-.524.146-.17.195-.297.294-.494.099-.19.049-.375-.015-.524-.065-.147-.594-1.599-.812-2.181z"/></svg></a> <a href="${SOCIAL_LINKS.tiktok}" target="_blank" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 448 512"><path d="M448 209.91a210.06 210.06 0 0 1-122.77-39.25V349.38A162.55 162.55 0 1 1 185 188.31V278.2a74.62 74.62 0 1 0 52.23 71.18V0l88 0a121.18 121.18 0 0 0 1.86 22.17h0A122.18 122.18 0 0 0 381 102.39a121.43 121.43 0 0 0 67 20.14Z"/></svg></a> <a href="${SOCIAL_LINKS.website}" target="_blank" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v-.07zM13 15v-1c0-1.1-.9-2-2-2h-1V9h1c1.1 0 2-.9 2-2V6.1c1.79.45 3.29 1.73 4.16 3.42-.32.06-.63.15-.92.28-.9.39-1.92.6-3.24.6h-1v3h1c1.32 0 2.34.21 3.24.6.29.13.59.22.92.28C16.29 13.27 14.79 14.55 13 14.99V15zm6.79-1.79c.13.58.21 1.17.21 1.79 0 4.08-3.05 7.44-7 7.93V17c1.1 0 2-.9 2-2v-1l4.79-4.79z"/></svg></a> `;
     };
 
-    const switchView = (targetViewId) => {
-        const views = [menuView, cartView, confirmationView, locationView];
-        views.forEach(view => {
-            if (view.id === targetViewId) {
-                view.classList.remove('hidden-view');
+    const updateCartTotal = () => { const t = cart.reduce((s, i) => s + (i.price * 1000) * i.quantity, 0); cartTotalEl.textContent = formatRealAmount(t); };
+    const updateCartCount = () => { const c = cart.reduce((s, i) => s + i.quantity, 0); if (c > 0) { cartCountEl.textContent = c; cartCountEl.classList.remove('hidden'); } else { cartCountEl.classList.add('hidden'); } };
+    const addToCart = (pId) => { const p = MENU_ITEMS.find(p => p.id === pId); const c = cart.find(i => i.id === pId); if (c) { c.quantity++; } else { cart.push({ ...p, quantity: 1, note: '' }); } renderCart(); };
+    const handleQuantityChange = (pId, op) => { const i = cart.find(item => item.id === pId); if (i) { if (op === '+') { i.quantity++; } else if (op === '-' && i.quantity > 1) { i.quantity--; } else { removeFromCart(pId); } } renderCart(); };
+    const removeFromCart = (pId) => { cart = cart.filter(i => i.id !== pId); renderCart(); };
+    const updateNote = (pId, n) => { const i = cart.find(item => item.id === pId); if (i) { i.note = n; } };
+    const switchView = (vName) => { [menuView, cartView, confirmationView, locationView].forEach(v => { v.id === vName ? v.classList.remove('hidden-view') : v.classList.add('hidden-view'); }); navFooter.style.display = vName === 'confirmation-view' ? 'none' : 'flex'; filtersSection.style.display = vName === 'menu-view' ? 'block' : 'none'; window.scrollTo(0, 0); };
+    const generateOrderNumber = () => Math.floor(100000 + Math.random() * 900000);
+
+    const validateOrder = () => { if(cart.length===0){alert('Tu carrito está vacío. Agrega productos para continuar.');return false;} if (customerName.trim() === '') { alert('Por favor, ingresa tu nombre.'); customerNameInput.focus(); return false; } if (customerPhone.trim() === '' || customerPhone.trim().length < 7) { alert('Por favor, ingresa un número de WhatsApp válido.'); customerPhoneInput.focus(); return false; } if (!isScheduled) { const status = getOperatingStatus(); if (!status.isOpen) { alert(`Estamos cerrados ahora. Para poder hacer tu pedido, por favor, selecciona la opción "Programar para después" y elige una hora válida.`); return false; } } else { if (!scheduledDateInput.value || !scheduledTimeInput.value) { alert('Por favor, selecciona una fecha y hora para programar tu pedido.'); return false; } if (!checkScheduleInputs()) { alert('La hora que seleccionaste está fuera de nuestro horario de servicio. Por favor, selecciona una hora válida (Domingos a Jueves: 5 PM - 11 PM / Viernes y Sábados: 5 PM - 12 AM).'); return false; } const scheduledDateTime = new Date(`${scheduledDateInput.value}T${scheduledTimeInput.value}:00`); if (scheduledDateTime < new Date()) { alert('La hora programada no puede ser en el pasado.'); return false; } if (selectedPayment === 'Efectivo') { alert('Para pedidos programados (reservas), el pago debe ser en línea (Nequi/Bancolombia) para confirmar tu pedido.'); return false; } } if(!selectedDelivery){alert('Por favor, selecciona un tipo de entrega.');return false;} if(selectedDelivery==='A Domicilio'&&deliveryAddress.trim()===''){alert('Por favor, ingresa tu dirección de domicilio.');addressInput.focus();return false;} if(!selectedPayment){alert('Por favor, selecciona un método de pago.');return false;} return true; };
+    const formatWhatsAppMessage = () => { let m = `🛍️ *NUEVO PEDIDO #${currentOrderNumber}*\n\n`; if (isScheduled) { const date = new Date(`${scheduledDateInput.value}T${scheduledTimeInput.value}:00`); const dateStr = date.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); m += `⏰ *PEDIDO PROGRAMADO (RESERVA)*\n`; m += `Día: ${dateStr}\n`; m += `Hora: ${scheduledTimeInput.value}\n\n`; } else { m += `⏰ *ENTREGA INMEDIATA:*\n`; m += `Tan pronto como sea posible. (Hora de envío: ${new Date().toLocaleTimeString('es-CO')})\n\n`; } m += `👤 *CLIENTE:*\n`; m += `Nombre: ${customerName.trim()}\n`; m += `Teléfono: ${customerPhone.trim()}\n\n`; m += `📋 *DETALLE DEL PEDIDO:*\n`; cart.forEach((i, idx) => { const realPrice = i.price * 1000; const subtotal = i.quantity * realPrice; m += `${idx+1}. *${i.name}*\n   Cantidad: ${i.quantity}\n   Precio: ${formatRealAmount(realPrice)} c/u\n   Subtotal: ${formatRealAmount(subtotal)}\n`; if(i.note.trim()!==''){m+=`   📝 Nota: ${i.note.trim()}\n`;} m+='\n'; }); const total = cart.reduce((s,i)=>(s+(i.price*1000)*i.quantity),0); m+=`💰 *TOTAL: ${formatRealAmount(total)}*\n\n`; let e=''; if(selectedDelivery==='A Domicilio')e='🏠'; if(selectedDelivery==='Para Recoger en Caja')e='🥡'; if(selectedDelivery==='Comer en el Establecimiento')e='🍽️'; m+=`📦 *TIPO DE ENTREGA:* ${e} ${selectedDelivery}\n`; if(selectedDelivery==='A Domicilio'&&deliveryAddress){m+=`📍 Dirección: ${deliveryAddress}\n`;} m+=`\n💳 *MÉTODO de PAGO:* ${selectedPayment}\n`; if(isScheduled || selectedPayment!=='Efectivo'){m+=`📎 Comprobante enviado vía WhatsApp\n`;} m+=`\n`; return encodeURIComponent(m); };
+    const resetApp = () => { cart=[]; customerName = ""; customerPhone = ""; selectedDelivery=null; deliveryAddress=""; selectedPayment=null; currentOrderNumber=null; isScheduled = false; customerNameInput.value = ""; customerPhoneInput.value = ""; addressInput.value=""; deliveryTimeNowOption.classList.add('border-yellow-400', 'border-4'); deliveryTimeNowOption.classList.remove('border-gray-300', 'border-2'); deliveryTimeScheduleOption.classList.remove('border-yellow-400', 'border-4'); deliveryTimeScheduleOption.classList.add('border-gray-300', 'border-2'); scheduleInputContainer.classList.add('hidden'); scheduleWarning.classList.add('hidden'); scheduledDateInput.value = ''; scheduledTimeInput.value = ''; addressInputContainer.classList.add('hidden'); document.querySelectorAll('.delivery-option.border-yellow-400').forEach(e=>{e.classList.remove('border-yellow-400','border-4'); e.classList.add('border-gray-300','border-2');}); document.querySelectorAll('.payment-option.border-yellow-400').forEach(e=>{e.classList.remove('border-yellow-400','border-4'); e.classList.add('border-gray-300','border-2');}); paymentProofNotice.classList.add('hidden'); renderCart(); switchView('menu-view'); };
+    const wrapText = (c, t, x, y, maxW, lH) => { if (!t || t.trim() === '') return y; const w = t.split(' '); let l = ''; for (let n = 0; n < w.length; n++) { const tL = l + w[n] + ' '; const tW = c.measureText(tL).width; if (tW > maxW && n > 0) { c.fillText(l.trim(), x, y); l = w[n] + ' '; y += lH; } else { l = tL; } } c.fillText(l.trim(), x, y); return y + lH; };
+    
+    // ✅ REQ 3.C: Function now only draws on canvas and returns the Data URL
+    const drawTicketOnCanvas = () => {
+        const canvas = document.getElementById('ticketCanvas'); const ctx = canvas.getContext('2d'); const canvasWidth = 800; const padding = 50; let currentY = 0; let estimatedHeight = 400; cart.forEach(item => { estimatedHeight += 45; if (item.note && item.note.trim().length > 0) { const noteLines = Math.ceil(item.note.length / 50); estimatedHeight += noteLines * 30; } }); estimatedHeight += 180; if (deliveryAddress) estimatedHeight += 40; estimatedHeight += 120; canvas.width = canvasWidth; canvas.height = estimatedHeight; ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvasWidth, canvas.height); currentY = padding + 20; ctx.textAlign = 'center'; ctx.fillStyle = '#DC2626'; ctx.font = 'bold 50px Poppins'; currentY = wrapText(ctx, RESTAURANT_NAME, canvasWidth / 2, currentY, canvasWidth - padding, 55); ctx.fillStyle = '#000000'; ctx.font = '32px Poppins'; currentY = wrapText(ctx, `Pedido #${currentOrderNumber}`, canvasWidth / 2, currentY, canvasWidth - padding, 40); ctx.fillStyle = '#555555'; ctx.font = '22px Poppins'; const date = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' }); currentY = wrapText(ctx, date, canvasWidth / 2, currentY, canvasWidth - padding, 30); currentY += 15; ctx.textAlign = 'center'; ctx.fillStyle = '#DC2626'; ctx.font = 'bold 28px Poppins'; if (isScheduled) { const schDate = new Date(`${scheduledDateInput.value}T${scheduledTimeInput.value}:00`); const schDateStr = schDate.toLocaleDateString('es-ES', { weekday: 'long', month: 'numeric', day: 'numeric' }); currentY = wrapText(ctx, `Reserva para: ${schDateStr} a las ${scheduledTimeInput.value}`, canvasWidth / 2, currentY, canvasWidth - padding, 35); } else { currentY = wrapText(ctx, `Entrega: Lo más pronto posible`, canvasWidth / 2, currentY, canvasWidth - padding, 35); } currentY += 15; ctx.textAlign = 'left'; ctx.fillStyle = '#000000'; ctx.font = 'bold 26px Poppins'; currentY = wrapText(ctx, `Cliente: ${customerName.trim()}`, padding, currentY, canvasWidth - padding * 2, 35); ctx.font = '26px Poppins'; currentY = wrapText(ctx, `Tel: ${customerPhone.trim()}`, padding, currentY, canvasWidth - padding * 2, 35); currentY += 15; ctx.beginPath(); ctx.moveTo(padding, currentY); ctx.lineTo(canvasWidth - padding, currentY); ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.stroke(); currentY += 35; ctx.textAlign = 'left'; cart.forEach(item => { const realPrice = item.price * 1000; const subtotal = realPrice * item.quantity; ctx.fillStyle = '#000000'; ctx.font = 'bold 28px Poppins'; const itemY = currentY; currentY = wrapText(ctx, `${item.quantity}x ${item.name}`, padding, currentY, canvasWidth - padding * 2 - 120, 35); ctx.textAlign = 'right'; ctx.fillText(formatRealAmount(subtotal).replace('$', ''), canvasWidth - padding, itemY); ctx.textAlign = 'left'; if (item.note.trim()) { ctx.fillStyle = '#555555'; ctx.font = 'italic 24px Poppins'; currentY = wrapText(ctx, `Nota: ${item.note.trim()}`, padding + 15, currentY, canvasWidth - padding * 2 - 15, 30); } currentY += 10; }); currentY += 15; ctx.beginPath(); ctx.moveTo(padding, currentY); ctx.lineTo(canvasWidth - padding, currentY); ctx.stroke(); currentY += 50; ctx.font = 'bold 42px Poppins'; ctx.fillStyle = '#000000'; ctx.fillText('TOTAL:', padding, currentY); const total = cart.reduce((sum, item) => sum + (item.price * 1000) * item.quantity, 0); ctx.textAlign = 'right'; ctx.fillStyle = '#DC2626'; ctx.fillText(formatRealAmount(total).replace('$', ''), canvasWidth - padding, currentY); ctx.textAlign = 'left'; currentY += 60; ctx.fillStyle = '#000000'; ctx.font = '26px Poppins'; currentY = wrapText(ctx, `Entrega: ${selectedDelivery}`, padding, currentY, canvasWidth - padding * 2, 35); if (selectedDelivery === 'A Domicilio' && deliveryAddress) { currentY = wrapText(ctx, `Dirección: ${deliveryAddress}`, padding, currentY, canvasWidth - padding * 2, 35); } currentY = wrapText(ctx, `Pago: ${selectedPayment}`, padding, currentY, canvasWidth - padding * 2, 35); ctx.fillStyle = '#FACC15'; ctx.fillRect(0, canvas.height - 60, canvasWidth, 60); ctx.fillStyle = '#000000'; ctx.font = 'bold 26px Poppins'; ctx.textAlign = 'center'; ctx.fillText('¡Gracias por tu compra!', canvasWidth / 2, canvas.height - 22);
+        
+        // Return the image data, but don't trigger download here
+        return canvas.toDataURL('image/png');
+    };
+
+    locationBtn.addEventListener('click', () => switchView('location-view'));
+    copyAddressBtn.addEventListener('click', () => { navigator.clipboard.writeText(LOCATION_DATA.address).then(() => { copyAddressBtn.textContent = '¡Copiado!'; setTimeout(() => { copyAddressBtn.textContent = 'Copiar Dirección'; }, 2000); }); });
+    
+    // ✅ REQ 2 & 3: Modified button listener to integrate Cordova plugins
+    sendOrderBtn.addEventListener('click', () => {
+        if (!validateOrder()) return;
+        currentOrderNumber = generateOrderNumber();
+        try {
+            // 1. Draw ticket and get Data URL
+            const ticketDataURL = drawTicketOnCanvas();
+            
+            // 2. Save image using cordova-plugin-file (with browser fallback)
+            saveTicketImage(ticketDataURL, `Ticket-Pedido-${currentOrderNumber}.png`);
+
+            // 3. Format and open WhatsApp link
+            const message = formatWhatsAppMessage();
+            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+
+            // Use InAppBrowser for Cordova, window.open for browsers
+            if (window.cordova && cordova.InAppBrowser) {
+                console.log("Using InAppBrowser to open WhatsApp.");
+                cordova.InAppBrowser.open(whatsappUrl, '_system');
             } else {
-                view.classList.add('hidden-view');
+                console.log("Using window.open as fallback.");
+                window.open(whatsappUrl, '_blank');
             }
-        });
-        
-        // Esconder el footer de navegación si estamos en la vista de confirmación
-        if (targetViewId === 'confirmation-view') {
-            navFooter.classList.add('hidden');
-            filtersSection.classList.add('hidden');
-        } else {
-            navFooter.classList.remove('hidden');
-            filtersSection.classList.remove('hidden');
-        }
-        
-        // Si regresamos al menú, actualizar el estado de apertura
-        if (targetViewId === 'menu-view') {
-            updateOperatingStatusDisplay();
-        }
-    };
-
-    const generateOrderNumber = () => {
-        const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const randomPart = Math.floor(1000 + Math.random() * 9000);
-        return `${datePart}-${randomPart}`;
-    };
-
-    const validateForm = () => {
-        if (cart.length === 0) {
-            alert('❌ Tu carrito está vacío.');
-            return false;
-        }
-        if (!customerNameInput.value || !customerPhoneInput.value) {
-            alert('❌ Por favor, ingresa tu nombre y número de WhatsApp.');
-            return false;
-        }
-        if (!selectedDelivery) {
-            alert('❌ Por favor, selecciona un tipo de entrega.');
-            return false;
-        }
-        if (selectedDelivery === 'A Domicilio' && !addressInput.value) {
-            alert('❌ Por favor, ingresa tu dirección completa.');
-            return false;
-        }
-        if (!selectedPayment) {
-            alert('❌ Por favor, selecciona un método de pago.');
-            return false;
-        }
-        if (isScheduled && !checkScheduleInputs()) {
-            alert('❌ Por favor, revisa y corrige la hora programada.');
-            return false;
-        }
-        return true;
-    };
-    
-    const formatOrderDetails = () => {
-        const now = new Date();
-        const dateTimeString = isScheduled 
-            ? `PROGRAMADO para el ${scheduledDateInput.value} a las ${scheduledTimeInput.value}`
-            : `AHORA (${now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })})`;
-        
-        let details = `📝 Nuevo Pedido - K’Leños\n`;
-        details += `---------------------------------------\n`;
-        details += `*# Pedido*: ${currentOrderNumber}\n`;
-        details += `*Cliente*: ${customerNameInput.value}\n`;
-        details += `*WhatsApp*: ${customerPhoneInput.value}\n`;
-        details += `*Entrega*: ${selectedDelivery}\n`;
-        
-        if (selectedDelivery === 'A Domicilio') {
-            details += `*Dirección*: ${addressInput.value}\n`;
-        }
-        details += `*Hora*: ${dateTimeString}\n`;
-        details += `*Pago*: ${selectedPayment}\n`;
-        details += `---------------------------------------\n`;
-        details += `*Productos*:\n`;
-
-        cart.forEach(item => {
-            details += `  - ${item.quantity}x ${item.name} (${formatMenuPrice(item.price)} c/u)\n`;
-        });
-
-        details += `---------------------------------------\n`;
-        details += `*TOTAL A PAGAR*: ${formatRealAmount(calculateTotal())}\n`;
-        details += `---------------------------------------\n`;
-        details += `¡Gracias por tu pedido! *#SaborValluno*`;
-        
-        return details;
-    };
-
-    const generateWhatsAppUrl = (orderNumber, total) => {
-        const message = encodeURIComponent(formatOrderDetails());
-        return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
-    };
-    
-    // --- LÓGICA DEL CANVAS PARA EL TICKET ---
-    const ticketCanvas = document.getElementById('ticketCanvas');
-
-    const renderTicket = (orderNumber) => {
-        const ctx = ticketCanvas.getContext('2d');
-        
-        const width = 500;
-        const lineHeight = 30;
-        const padding = 20;
-        let y = padding;
-        
-        // Calcular altura dinámica
-        let contentHeight = 180 + (cart.length * lineHeight) + 120;
-        
-        ticketCanvas.width = width;
-        ticketCanvas.height = contentHeight;
-        
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, width, contentHeight);
-
-        // Header
-        ctx.font = 'bold 32px Poppins';
-        ctx.fillStyle = '#C8102E'; // Red
-        ctx.textAlign = 'center';
-        ctx.fillText(RESTAURANT_NAME, width / 2, y + 20);
-        y += 40;
-        
-        ctx.font = 'bold 18px Poppins';
-        ctx.fillStyle = '#000000';
-        ctx.fillText('PEDIDO RECIBIDO', width / 2, y + 20);
-        y += 30;
-        
-        // Order Number
-        ctx.font = '900 36px Poppins';
-        ctx.fillStyle = '#FBBF24'; // Yellow
-        ctx.textAlign = 'center';
-        ctx.fillText(orderNumber, width / 2, y + 40);
-        y += 60;
-        
-        // Items Header
-        ctx.font = 'bold 16px Poppins';
-        ctx.fillStyle = '#000000';
-        ctx.textAlign = 'left';
-        ctx.fillText('CANT.', padding, y + 10);
-        ctx.textAlign = 'left';
-        ctx.fillText('PRODUCTO', padding + 80, y + 10);
-        ctx.textAlign = 'right';
-        ctx.fillText('TOTAL', width - padding, y + 10);
-        y += 20;
-
-        // Separator
-        ctx.strokeStyle = '#000000';
-        ctx.beginPath();
-        ctx.moveTo(padding, y + 5);
-        ctx.lineTo(width - padding, y + 5);
-        ctx.stroke();
-        y += 10;
-        
-        // Items List
-        ctx.font = '16px Poppins';
-        cart.forEach(item => {
-            const itemTotal = item.price * item.quantity * 1000;
             
-            ctx.fillStyle = '#000000';
-            ctx.textAlign = 'left';
-            ctx.fillText(item.quantity, padding, y + 10);
-            
-            ctx.fillText(item.name, padding + 80, y + 10);
-            
-            ctx.textAlign = 'right';
-            ctx.fillText(formatRealAmount(itemTotal), width - padding, y + 10);
-            y += lineHeight;
-        });
-
-        // Separator
-        y += 5;
-        ctx.beginPath();
-        ctx.moveTo(padding, y + 5);
-        ctx.lineTo(width - padding, y + 5);
-        ctx.stroke();
-        y += 10;
-        
-        // Total
-        const total = calculateTotal();
-        ctx.font = 'bold 20px Poppins';
-        ctx.fillStyle = '#C8102E'; // Red
-        ctx.textAlign = 'left';
-        ctx.fillText('TOTAL:', padding, y + 20);
-        ctx.textAlign = 'right';
-        ctx.fillText(formatRealAmount(total), width - padding, y + 20);
-        y += 40;
-        
-        // Footer
-        ctx.font = '14px Poppins';
-        ctx.fillStyle = '#6B7280'; // Gray
-        ctx.textAlign = 'center';
-        ctx.fillText('¡Te contactaremos pronto para confirmar la entrega!', width / 2, y + 20);
-    };
-
-    // --- EVENT LISTENERS ---
-
-    // Initial load setup
-    document.getElementById('restaurant-name-header').textContent = RESTAURANT_NAME;
-    document.getElementById('address-text').textContent = LOCATION_DATA.address;
-    document.getElementById('gmaps-iframe').src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1!2d-76.541416!3d3.479573!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zM8KwMjgnNDYuNSJOIDc2wrMyNScrMTQuMSJX!5e0!3m2!1ses!2sco!4v1678899876543!5m2!1ses!2sco`;
-
-    renderMenu();
-    updateCartDisplay();
-    renderPaymentMethods();
-    updateOperatingStatusDisplay();
+            // 4. Update UI
+            document.getElementById('order-number-display').textContent = currentOrderNumber;
+            switchView('confirmation-view');
+        } catch (error) {
+            console.error("Error processing order:", error);
+            alert("Hubo un problema al procesar tu pedido. Por favor, intenta de nuevo.");
+        }
+    });
     
-    // Configurar la fecha mínima para el calendario (hoy)
-    const today = new Date().toISOString().split('T')[0];
-    scheduledDateInput.setAttribute('min', today);
-
-
-    // Navigation
+    newOrderBtn.addEventListener('click', resetApp);
     navMenuBtn.addEventListener('click', () => switchView('menu-view'));
     navCartBtn.addEventListener('click', () => switchView('cart-view'));
-    locationBtn.addEventListener('click', () => switchView('location-view'));
-    newOrderBtn.addEventListener('click', () => switchView('menu-view'));
-
-    // Cart actions
-    productList.addEventListener('click', (e) => {
-        const btn = e.target.closest('.add-to-cart-btn');
-        if (btn) {
-            addToCart(btn.dataset.id);
-        }
-    });
-
-    cartItemsContainer.addEventListener('click', (e) => {
-        const btn = e.target.closest('.cart-quantity-btn');
-        if (btn) {
-            const action = btn.dataset.action;
-            const id = btn.dataset.id;
-            if (action === 'increase') {
-                updateQuantity(id, 1);
-            } else if (action === 'decrease') {
-                updateQuantity(id, -1);
-            }
-        }
-    });
-
-    // Filters
-    categoryBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            currentFilter = btn.dataset.category;
-            
-            // Highlight active button
-            categoryBtns.forEach(b => {
-                b.classList.remove('bg-yellow-400', 'text-black');
-                b.classList.add('bg-red-600', 'text-white');
-            });
-            btn.classList.add('bg-yellow-400', 'text-black');
-            btn.classList.remove('bg-red-600', 'text-white');
-            
-            renderMenu();
-        });
-    });
-    
-    // Initial highlight for 'all'
-    document.querySelector('.category-btn[data-category="all"]').classList.remove('bg-red-600', 'text-white');
-    document.querySelector('.category-btn[data-category="all"]').classList.add('bg-yellow-400', 'text-black');
-
-
-    // Delivery Type
-    deliveryOptions.addEventListener('click', (e) => {
-        const btn = e.target.closest('.delivery-option');
-        if (!btn) return;
-
-        document.querySelectorAll('.delivery-option').forEach(b => {
-            b.classList.remove('border-yellow-400', 'border-4');
-            b.classList.add('border-gray-300', 'border-2');
-        });
-
-        btn.classList.add('border-yellow-400', 'border-4');
-        btn.classList.remove('border-gray-300', 'border-2');
-
-        selectedDelivery = btn.dataset.value;
-
-        if (selectedDelivery === 'A Domicilio') {
-            addressInputContainer.classList.remove('hidden');
-        } else {
-            addressInputContainer.classList.add('hidden');
-        }
-    });
-
-    addressInput.addEventListener('input', (e) => {
-        deliveryAddress = e.target.value;
-    });
-
-    // Payment Method
-    paymentMethodsContainer.addEventListener('click', (e) => {
-        const btn = e.target.closest('.payment-option');
-        if (!btn) return;
-
-        document.querySelectorAll('.payment-option').forEach(b => {
-            b.classList.remove('border-yellow-400', 'border-4');
-            b.classList.add('border-gray-300', 'border-2');
-        });
-
-        btn.classList.add('border-yellow-400', 'border-4');
-        btn.classList.remove('border-gray-300', 'border-2');
-        
-        selectedPayment = btn.dataset.value;
-
-        if (selectedPayment === 'Nequi' || selectedPayment === 'Bancolombia') {
-            paymentProofNotice.classList.remove('hidden');
-        } else {
-            paymentProofNotice.classList.add('hidden');
-        }
-    });
-    
-    // Delivery Time Scheduling
-    deliveryTimeNowOption.addEventListener('click', () => {
-        isScheduled = false;
-        deliveryTimeNowOption.classList.add('border-yellow-400', 'border-4');
-        deliveryTimeNowOption.classList.remove('border-gray-300', 'border-2');
-        deliveryTimeScheduleOption.classList.remove('border-yellow-400', 'border-4');
-        deliveryTimeScheduleOption.classList.add('border-gray-300', 'border-2');
-        scheduleInputContainer.classList.add('hidden');
-        paymentProofNotice.classList.add('hidden');
-    });
-
-    deliveryTimeScheduleOption.addEventListener('click', () => {
-        isScheduled = true;
-        deliveryTimeScheduleOption.classList.add('border-yellow-400', 'border-4');
-        deliveryTimeScheduleOption.classList.remove('border-gray-300', 'border-2');
-        deliveryTimeNowOption.classList.remove('border-yellow-400', 'border-4');
-        deliveryTimeNowOption.classList.add('border-gray-300', 'border-2');
-        scheduleInputContainer.classList.remove('hidden');
-        paymentProofNotice.classList.remove('hidden'); // Se hace visible para pedidos programados
-        checkScheduleInputs();
-    });
-
+    categoryBtns.forEach(btn => { btn.addEventListener('click', () => { currentFilter = btn.dataset.category; categoryBtns.forEach(b => { b.classList.remove('bg-yellow-400', 'text-black'); b.classList.add('bg-red-600', 'text-white'); }); btn.classList.add('bg-yellow-400', 'text-black'); btn.classList.remove('bg-red-600', 'text-white'); renderMenu(); }); });
+    deliveryTimeNowOption.addEventListener('click', () => { document.querySelectorAll('.time-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); }); deliveryTimeNowOption.classList.add('border-yellow-400', 'border-4'); deliveryTimeNowOption.classList.remove('border-gray-300', 'border-2'); isScheduled = false; scheduleInputContainer.classList.add('hidden'); });
+    deliveryTimeScheduleOption.addEventListener('click', () => { document.querySelectorAll('.time-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); }); deliveryTimeScheduleOption.classList.add('border-yellow-400', 'border-4'); deliveryTimeScheduleOption.classList.remove('border-gray-300', 'border-2'); isScheduled = true; scheduleInputContainer.classList.remove('hidden'); checkScheduleInputs(); });
     scheduledDateInput.addEventListener('change', checkScheduleInputs);
+    scheduledTimeInput.addEventListener('input', checkScheduleInputs);
     scheduledTimeInput.addEventListener('change', checkScheduleInputs);
+    productList.addEventListener('click', (e) => { const btn = e.target.closest('.add-to-cart-btn'); if (btn) { const id = parseInt(btn.dataset.id); addToCart(id); } });
+    cartItemsContainer.addEventListener('click', (e) => { const btn = e.target.closest('.quantity-change-btn, .remove-item-btn'); if (!btn) return; const id = parseInt(btn.dataset.id); if (btn.classList.contains('quantity-change-btn')) { const operation = btn.textContent; handleQuantityChange(id, operation); } else if (btn.classList.contains('remove-item-btn')) { removeFromCart(id); } });
+    cartItemsContainer.addEventListener('input', (e) => { const input = e.target.closest('.note-input'); if (input) { const id = parseInt(input.dataset.id); updateNote(id, input.value); } });
+    customerNameInput.addEventListener('input', (e) => { customerName = e.target.value; });
+    customerPhoneInput.addEventListener('input', (e) => { customerPhone = e.target.value; });
+    deliveryOptions.addEventListener('click', (e) => { const btn = e.target.closest('.delivery-option'); if (!btn) return; document.querySelectorAll('.delivery-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); }); btn.classList.add('border-yellow-400', 'border-4'); btn.classList.remove('border-gray-300', 'border-2'); selectedDelivery = btn.dataset.value; if (selectedDelivery === 'A Domicilio') { addressInputContainer.classList.remove('hidden'); } else { addressInputContainer.classList.add('hidden'); } });
+    addressInput.addEventListener('input', (e) => { deliveryAddress = e.target.value; });
+    paymentMethodsContainer.addEventListener('click', (e) => { const btn = e.target.closest('.payment-option'); if (!btn) return; document.querySelectorAll('.payment-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); }); btn.classList.add('border-yellow-400', 'border-4'); btn.classList.remove('border-gray-300', 'border-2'); selectedPayment = btn.dataset.value; if (selectedPayment === 'Nequi' || selectedPayment === 'Bancolombia') { paymentProofNotice.classList.remove('hidden'); } else { paymentProofNotice.classList.add('hidden'); } });
 
-    // Copy Address Button
-    copyAddressBtn.addEventListener('click', async () => {
-        try {
-            // Usa Cordova Clipboard API si está disponible, sino usa Clipboard Web API
-            if (window.cordova && cordova.plugins && cordova.plugins.clipboard) {
-                cordova.plugins.clipboard.copy(LOCATION_DATA.address);
-            } else if (navigator.clipboard) {
-                await navigator.clipboard.writeText(LOCATION_DATA.address);
-            } else {
-                throw new Error('Clipboard API no disponible');
+    const initializeApp = () => {
+        document.getElementById('restaurant-name-header').textContent = RESTAURANT_NAME;
+        document.getElementById('address-text').textContent = LOCATION_DATA.address;
+        
+        const encodedAddress = encodeURIComponent(LOCATION_DATA.address);
+        // Corrected link for opening in Google Maps app
+        openMapsBtn.href = `https://maps.google.com/?q=${encodedAddress}`;
+        // Corrected iframe URL
+        document.getElementById('gmaps-iframe').src = `${LOCATION_DATA.map_url}?q=${encodedAddress}&zoom=17&output=embed`; 
+
+        // ✅ REQ 2 (Bonus): Handle maps link with InAppBrowser for best practice
+        openMapsBtn.addEventListener('click', function(e) {
+            if (window.cordova && cordova.InAppBrowser) {
+                e.preventDefault();
+                cordova.InAppBrowser.open(this.href, '_system');
             }
-            alert('✅ Dirección copiada al portapapeles!');
-        } catch (err) {
-            console.error('Error al copiar:', err);
-            alert('❌ Error al copiar la dirección.');
-        }
-    });
+        });
 
-
-    // --- BOTÓN FINAL DE ENVÍO (CORREGIDO PARA PLUGINS) ---
-    sendOrderBtn.addEventListener('click', () => {
-        if (!validateForm()) return;
-
-        currentOrderNumber = generateOrderNumber();
-        renderTicket(currentOrderNumber);
+        categoryBtns[0].classList.add('bg-yellow-400', 'text-black');
+        categoryBtns[0].classList.remove('bg-red-600', 'text-white');
         
-        const dataURL = ticketCanvas.toDataURL('image/png');
-        const whatsappUrl = generateWhatsAppUrl(currentOrderNumber, cartTotal);
+        updateOperatingStatusDisplay();
+        setInterval(updateOperatingStatusDisplay, 60000); 
 
-        // 1. Guardar el ticket (File Plugin)
-        saveTicketImage(dataURL); // Esta función incluye fallback para descarga web si los plugins fallan
+        const today = new Date();
+        scheduledDateInput.min = today.toISOString().split('T')[0];
 
-        // 2. Abrir WhatsApp (InAppBrowser Plugin)
-        if (window.cordova && window.cordova.InAppBrowser) {
-            // Usar InAppBrowser para forzar la apertura de la app WhatsApp
-            cordova.InAppBrowser.open(whatsappUrl, '_system');
-        } else {
-            // Fallback para navegador web
-            window.open(whatsappUrl, '_blank');
-        }
+        renderMenu();
+        renderCart();
+        renderPaymentMethods();
+        renderSocialLinks();
+        switchView('menu-view');
+    };
 
-        // Mostrar confirmación
-        document.getElementById('order-number-display').textContent = currentOrderNumber;
-        customerName = customerNameInput.value;
-        customerPhone = customerPhoneInput.value;
-        
-        switchView('confirmation-view');
-        cart = []; // Vaciar carrito
-        updateCartDisplay(); // Actualizar interfaz
-    });
-    // --- FIN BOTÓN FINAL DE ENVÍO ---
+    initializeApp();
+}
 
-}; // Fin de initApp
-
-// 1. Evento principal de Cordova (mobile): Los plugins están listos
-document.addEventListener('deviceready', initApp);
-
-// 2. Fallback para navegador web (PC): Si Cordova no se detecta en 3 segundos
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (!isAppReady) {
-            console.warn("Cordova no detectado. Inicializando en modo navegador.");
-            initApp();
-        }
-    }, 3000);
-});
+// ✅ REQ 1: Initialization logic detects if it's in Cordova or a browser.
+if (window.cordova) {
+    // Running inside Cordova wrapper
+    document.addEventListener('deviceready', startApp, false);
+} else {
+    // Running in a standard browser
+    document.addEventListener('DOMContentLoaded', startApp, false);
+}
 
 </script>
 
