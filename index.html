@@ -168,7 +168,7 @@ function startApp() {
     
     const LOCATION_DATA = {
         address: "Cl. 75a Nte. #2-110, Acopi, Cali, Valle del Cauca, Colombia",
-        map_url: "https://www.google.com/maps/embed/v1/place" // Corrected embed URL base
+        map_url: "https://maps.app.goo.gl/LirMUEabk1ZnEhCRA?q=$7" // Corrected embed URL base
     };
 
     const SOCIAL_LINKS = {
@@ -394,7 +394,7 @@ function startApp() {
         
         const encodedAddress = encodeURIComponent(LOCATION_DATA.address);
         // Corrected link for opening in Google Maps app
-        openMapsBtn.href = `https://maps.google.com/?q=${encodedAddress}`;
+        openMapsBtn.href = `https://maps.app.goo.gl/LirMUEabk1ZnEhCRA?q=$8{encodedAddress}`;
         // Corrected iframe URL
         document.getElementById('gmaps-iframe').src = `${LOCATION_DATA.map_url}?q=${encodedAddress}&zoom=17&output=embed`; 
 
