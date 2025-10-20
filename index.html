@@ -168,7 +168,7 @@ function startApp() {
     
     const LOCATION_DATA = {
         address: "Cl. 75a Nte. #2-110, Acopi, Cali, Valle del Cauca, Colombia",
-        map_url: "https://maps.app.goo.gl/LirMUEabk1ZnEhCRA?q=$7" // Corrected embed URL base
+        map_url: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497.80022739915904!2d-76.50136182453736!3d3.4940402337368077!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e30a10038b99d4f%3A0x8017b7164bfb50f4!2sK'Le%C3%B1os%20-%20Sabor%20100%25%20Valluno!5e0!3m2!1ses-419!2sco!4v1760857589673!5m2!1ses-419!2sco?q=...3" // Corrected embed URL base
     };
 
     const SOCIAL_LINKS = {
@@ -394,7 +394,7 @@ function startApp() {
         
         const encodedAddress = encodeURIComponent(LOCATION_DATA.address);
         // Corrected link for opening in Google Maps app
-        openMapsBtn.href = `https://maps.app.goo.gl/LirMUEabk1ZnEhCRA?q=$8{encodedAddress}`;
+        openMapsBtn.href = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497.80022739915904!2d-76.50136182453736!3d3.4940402337368077!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e30a10038b99d4f%3A0x8017b7164bfb50f4!2sK'Le%C3%B1os%20-%20Sabor%20100%25%20Valluno!5e0!3m2!1ses-419!2sco!4v1760857589673!5m2!1ses-419!2sco?q=...4`;
         // Corrected iframe URL
         document.getElementById('gmaps-iframe').src = `${LOCATION_DATA.map_url}?q=${encodedAddress}&zoom=17&output=embed`; 
 
