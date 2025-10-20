@@ -160,6 +160,36 @@
 
 
 <script>
+    
+function handleExternalLinks() {
+    // 1. Verificar si estamos en Cordova Y si el plugin InAppBrowser está cargado.
+    if (!window.cordova || !window.cordova.InAppBrowser) {
+        return; // No hacemos nada si no estamos en Cordova o falta el plugin.
+    }
+
+    // 2. Escuchar todos los clics en la ventana.
+    document.addEventListener('click', function(e) {
+        // Encontrar el elemento <a> más cercano al clic (puede ser un hijo)
+        let target = e.target.closest('a');
+
+        // Si no es un enlace <a> o no tiene atributo href, ignorar.
+        if (!target || !target.href) return;
+
+        // Opcional: Si el enlace está vacío o es un ancla interna (#), ignorar.
+        if (target.href === '#' || target.href.startsWith('javascript:')) return;
+
+        // Opcional: Si es un enlace a tu propia webapp, ignorar (solo si cargaras el HTML localmente)
+        // Ya que estás cargando un HTML remoto, asumiremos que todos los http/https externos son externos.
+
+        // Si es un enlace:
+        // Evitar la acción por defecto (que es intentar cargar la URL en el WebView)
+        e.preventDefault();
+
+        // Forzar la apertura en la aplicación del sistema (navegador, WhatsApp, Maps, etc.)
+        cordova.InAppBrowser.open(target.href, '_system');
+    });
+}
+    
 // ✅ REQ 1: Main app logic is wrapped to be called by the correct event listener.
 function startApp() {
 
