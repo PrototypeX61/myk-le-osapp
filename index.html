@@ -377,7 +377,7 @@ function startApp() {
 
             <!-- TikTok -->
             <a href="#"
-               onclick="try{window.location='snssdk1233://user/profile/0';
+               onclick="try{window.location='tiktok://user/@franquiciasvallunas';
                setTimeout(()=>window.open('https://www.tiktok.com/@franquiciasvallunas','_system'),700);}
                catch(e){window.open('https://www.tiktok.com/@franquiciasvallunas','_system');}"
                class="text-black hover:text-red-600 transition-colors">
@@ -435,7 +435,7 @@ function startApp() {
 
             // 3. Format and open WhatsApp link
             const message = formatWhatsAppMessage();
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+            const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}?text=${message}`;
 
             // Use InAppBrowser for Cordova, window.open for browsers
             if (window.cordova && cordova.InAppBrowser) {
