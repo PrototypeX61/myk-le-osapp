@@ -428,12 +428,51 @@ function startApp() {
     sendOrderBtn.addEventListener('click', () => {
         if (!validateOrder()) return;
         currentOrderNumber = generateOrderNumber();
+
         try {
-            // 1. Draw ticket and get Data URL
-            const ticketDataURL = drawTicketOnCanvas();
-            
-            // 2. Save image using cordova-plugin-file (with browser fallback)
-            saveTicketImage(ticketDataURL, `Ticket-Pedido-${currentOrderNumber}.png`);
+            // 1️⃣ Crear imagen desde canvas
+    const ticketDataURL = drawTicketCanvas();
+
+    // 2️⃣ Convertir DataURL a Blob
+            const byteString = atob(ticketDataURL.split(',')[1]);
+            const mimeString = ticketDataURL.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+
+            // 3️⃣ Guardar en Descargas
+            const fileName = `Ticket-Pedido${currentOrderNumber}.png`;
+            const ruta = cordova.file.externalRootDirectory + "Download/" + fileName;
+
+            window.resolveLocalFileSystemURL(
+                cordova.file.externalRootDirectory + "Download/",
+                function(dir) {
+                    dir.getFile(fileName, { create: true }, function(file) {
+                        file.createWriter(function(fileWriter) {
+                            fileWriter.write(blob);
+                            alert("✅ Ticket guardado en Descargas");
+                            console.log("Guardado en:", ruta);
+
+                            // 4️⃣ Continuar con WhatsApp
+                            const message = formatWhatsAppMessage();
+                            sendToWhatsApp(message);
+
+                        });
+                    });
+                },
+                function(error) {
+                    alert("❌ Error al acceder a Descargas");
+                    console.log(error);
+                }
+            );
+
+        } catch (error) {
+            alert("❌ Error al generar el Ticket");
+             console.error(error);
+        }
 
             // 3. Format and open WhatsApp link
             const message = formatWhatsAppMessage();
