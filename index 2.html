@@ -343,37 +343,37 @@ function startApp() {
     };
 
     // ✅ REQ 3.B: Main function to save the ticket image using cordova-plugin-file
+    // AÑADIR O REEMPLAZAR LA FUNCIÓN saveTicketImage DENTRO DE startApp()
     const saveTicketImage = (dataURL, fileName) => {
-        // Check if running in Cordova and the file plugin is available
-        if (window.cordova && window.resolveLocalFileSystemURL) {
-            const blob = b64toBlob(dataURL, 'image/png');
-            const storagePath = cordova.file.externalRootDirectory + 'Download/';
+        return new Promise((resolve, reject) => { 
+        
+            if (!(window.cordova && window.resolveLocalFileSystemURL)) {
+                console.error("Entorno no Cordova o plugins de archivo no disponibles.");
+                return reject("No se puede guardar el archivo sin Cordova."); 
+            }
+
+            const blob = b64toBlob(dataURL, 'image/png'); // Usa b64toBlob que ya tienes
+            const storagePath = cordova.file.externalRootDirectory + 'Download/'; // Ruta deseada
 
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
                     fileEntry.createWriter((fileWriter) => {
                         fileWriter.onwriteend = () => {
-                            console.log(`Ticket saved successfully to: ${fileEntry.nativeURL()}`);
-                            // Optionally show a native toast notification
+                            console.log(`Ticket guardado: ${fileEntry.nativeURL}`);
+                            // RESOLVE: Devolver la URI del archivo guardado
+                            resolve(fileEntry.nativeURL); 
                         };
                         fileWriter.onerror = (e) => {
                             console.error(`Failed file write: ${e.toString()}`);
                             alert('Error: No se pudo guardar el tiquete.');
+                            reject(e);
                         };
                         fileWriter.write(blob);
-                    });
-                }, (err) => console.error("GetFile error: ", err));
-            }, (err) => console.error("ResolveFileSystem error: ", err));
-        } else {
-            // Fallback for standard browsers
-            console.log("Cordova File plugin not found. Using browser download.");
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = dataURL;
-            link.click();
-        }
+                    }, reject);
+                }, reject);
+            }, reject);
+        });
     };
-
     const formatMenuPrice = (price) => `$${price.toFixed(1)}K`;
     const formatRealAmount = (realAmount) => `$${realAmount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
