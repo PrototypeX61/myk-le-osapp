@@ -330,37 +330,33 @@ function startApp() {
 
     // ✅ REQ 3.B: Main function to save the ticket image using cordova-plugin-file
     const saveTicketImage = (dataURL, fileName) => {
-        // 1. Envolver en una Promesa
         return new Promise((resolve, reject) => { 
         
-            // 2. Verificar Cordova y plugins (usar reject si falla)
             if (!(window.cordova && window.resolveLocalFileSystemURL && typeof b64toBlob === 'function')) {
                 console.error("Plugins de Cordova o b64toBlob no están listos.");
-                // 3. Rechazar la promesa si falta algo
                 return reject("Plugins no listos o b64toBlob no definido."); 
             }
 
-            const blob = b64toBlob(dataURL, 'image/png'); // Usar la función b64toBlob
-            const storagePath = cordova.file.externalRootDirectory + 'Download/'; // Ruta de destino
+            const blob = b64toBlob(dataURL, 'image/png'); 
+            const storagePath = cordova.file.externalRootDirectory + 'Download/'; 
 
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
                     fileEntry.createWriter((fileWriter) => {
                         fileWriter.onwriteend = () => {
-                            // 4. ÉXITO: Resolver la promesa con la URI nativa
+                            // CORRECCIÓN AQUÍ 👇: Usa la propiedad, no una función
+                            console.log(`Ticket guardado: ${fileEntry.nativeURL}`); 
+                            // ASEGÚRATE de que esta línea exista para resolver la Promise
                             resolve(fileEntry.nativeURL); 
                         };
                         fileWriter.onerror = (e) => {
                             console.error(`Error de escritura: ${e.toString()}`);
-                            // 5. ERROR: Rechazar la promesa
-                            reject(e); 
+                            reject(e); // Rechazar si hay error
                         };
                         fileWriter.write(blob);
-                    // 5. ERROR: Rechazar si falla createWriter o getFile
-                    }, reject); 
-                }, reject);
-            // 5. ERROR: Rechazar si falla resolveLocalFileSystemURL
-            }, reject); 
+                    }, reject); // Rechazar si falla createWriter
+                }, reject); // Rechazar si falla getFile
+            }, reject); // Rechazar si falla resolveLocalFileSystemURL
         });
     };
     const formatMenuPrice = (price) => `$${price.toFixed(1)}K`;
