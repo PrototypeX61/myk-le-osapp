@@ -244,6 +244,15 @@ function startApp() {
             }
         }
     };
+    const b64toBlob = (dataURL, mimeType) => {
+        const base64 = dataURL.split(',')[1];
+        const binary = atob(base64);
+        const array = [];
+        for (let i = 0; i < binary.length; i++) {
+            array.push(binary.charCodeAt(i));
+        }
+        return new Blob([new Uint8Array(array)], { type: mimeType });
+    };
     const RESTAURANT_NAME = "K’Leños Sabor 100% Valluno";
     const WHATSAPP_NUMBER = "573216350541";
     
