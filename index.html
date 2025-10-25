@@ -430,7 +430,7 @@ function startApp() {
         currentOrderNumber = generateOrderNumber();
 
             // 1. Crear imagen desde canvas
-            const ticketDataURL = drawTicketCanvas();
+            const ticketDataURL = drawTicketOnCanvas();
 
             // 2. Convertir DataURL a Blob
             const byteString = atob(ticketDataURL.split(',')[1]);
