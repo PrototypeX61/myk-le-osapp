@@ -484,38 +484,44 @@ function startApp() {
     copyAddressBtn.addEventListener('click', () => { navigator.clipboard.writeText(LOCATION_DATA.address).then(() => { copyAddressBtn.textContent = '¡Copiado!'; setTimeout(() => { copyAddressBtn.textContent = 'Copiar Dirección'; }, 2000); }); });
     
     // ✅ REQ 2 & 3: Modified button listener to integrate Cordova plugins
-    sendOrderBtn.addEventListener('click', () => {
-        if (!validateOrder()) return;
-        currentOrderNumber = generateOrderNumber();
+    sendOrderBtn.addEventListener('click', async () => {
+        if (!validateOrder()) return; 
+
+        // 1. SOLICITAR PERMISO (USANDO await)
         try {
-            // 1. Draw ticket and get Data URL
-            const ticketDataURL = drawTicketOnCanvas();
-            
-            // 2. Save image using cordova-plugin-file (with browser fallback)
-            saveTicketImage(ticketDataURL, `Ticket-Pedido-${currentOrderNumber}.png`);
-
-            // 3. Format and open WhatsApp link
-            const message = formatWhatsAppMessage();
-            const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${message}`;
-
-            // Use InAppBrowser for Cordova, window.open for browsers
-            if (window.cordova && cordova.InAppBrowser) {
-                console.log("Using InAppBrowser to open WhatsApp.");
-                cordova.InAppBrowser.open(whatsappUrl, '_system');
-            } else {
-                console.log("Using window.open as fallback.");
-                window.open(whatsappUrl, '_blank');
+            // Llama a la función checkWritePermission que ya definiste
+            const permissionGranted = await checkWritePermission();
+            if (!permissionGranted) {
+                return; // Detener si el usuario deniega
             }
-            
-            // 4. Update UI
+        } catch (e) {
+            console.error("Error al gestionar permisos: ", e);
+            return;
+        }
+
+        // 2. GENERAR Y GUARDAR TICKET (USANDO await)
+        currentOrderNumber = generateOrderNumber(); 
+        const ticketDataURL = drawTicketOnCanvas(); 
+
+        try {
+            const message = formatWhatsAppMessage();
+            const fileName = `Ticket-Pedido-${currentOrderNumber}.png`;
+        
+            // Espera a que el archivo se guarde y obtén su URI (filePath)
+            const filePath = await saveTicketImage(ticketDataURL, fileName); 
+
+            // 3. COMPARTIR TICKET CON IMAGEN ADJUNTA (Usando la nueva función)
+            shareTicketOnWhatsApp(message, filePath); 
+
+            // 4. ACTUALIZAR UI (tu lógica original)
             document.getElementById('order-number-display').textContent = currentOrderNumber;
             switchView('confirmation-view');
+        
         } catch (error) {
-            console.error("Error processing order:", error);
-            alert("Hubo un problema al procesar tu pedido. Por favor, intenta de nuevo.");
+            console.error("Error al procesar el pedido o guardar el ticket:", error);
+            alert("❌ Hubo un problema al procesar y enviar el pedido. Por favor, intenta de nuevo.");
         }
-    });
-    
+    });    
     newOrderBtn.addEventListener('click', resetApp);
     navMenuBtn.addEventListener('click', () => switchView('menu-view'));
     navCartBtn.addEventListener('click', () => switchView('cart-view'));
