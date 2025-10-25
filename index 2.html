@@ -343,32 +343,32 @@ function startApp() {
     };
 
     // ✅ REQ 3.B: Main function to save the ticket image using cordova-plugin-file
-    // AÑADIR O REEMPLAZAR LA FUNCIÓN saveTicketImage DENTRO DE startApp()
     const saveTicketImage = (dataURL, fileName) => {
         return new Promise((resolve, reject) => { 
         
-            if (!(window.cordova && window.resolveLocalFileSystemURL)) {
-                console.error("Entorno no Cordova o plugins de archivo no disponibles.");
-                return reject("No se puede guardar el archivo sin Cordova."); 
+            if (!(window.cordova && window.resolveLocalFileSystemURL && window.b64toBlob)) {
+                // Error de entorno si falta algún plugin o función auxiliar (b64toBlob)
+                return reject("Plugins de Cordova o b64toBlob no están listos."); 
             }
 
-            const blob = b64toBlob(dataURL, 'image/png'); // Usa b64toBlob que ya tienes
-            const storagePath = cordova.file.externalRootDirectory + 'Download/'; // Ruta deseada
+            const blob = b64toBlob(dataURL, 'image/png'); // Convierte DataURL a Blob
+            const storagePath = cordova.file.externalRootDirectory + 'Download/'; // Ruta de guardado en Android
 
+            // 1. Obtener acceso a la carpeta de descargas
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
+                // 2. Crear o abrir el archivo
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
+                    // 3. Crear el escritor de archivos
                     fileEntry.createWriter((fileWriter) => {
                         fileWriter.onwriteend = () => {
-                            console.log(`Ticket guardado: ${fileEntry.nativeURL}`);
-                            // RESOLVE: Devolver la URI del archivo guardado
+                            // ÉXITO: Resolvemos la promesa devolviendo la URI nativa
                             resolve(fileEntry.nativeURL); 
                         };
                         fileWriter.onerror = (e) => {
-                            console.error(`Failed file write: ${e.toString()}`);
-                            alert('Error: No se pudo guardar el tiquete.');
+                            console.error(`Error de escritura: ${e.toString()}`);
                             reject(e);
                         };
-                        fileWriter.write(blob);
+                        fileWriter.write(blob); // 4. Escribir el Blob en el archivo
                     }, reject);
                 }, reject);
             }, reject);
