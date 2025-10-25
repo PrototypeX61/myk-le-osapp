@@ -288,7 +288,7 @@ function startApp() {
         // Check if running in Cordova and the file plugin is available
         if (window.cordova && window.resolveLocalFileSystemURL) {
             const blob = b64toBlob(dataURL, 'image/png');
-            const storagePath = cordova.file.externalRootDirectory + 'Download/';
+            const storagePath = cordova.file.cacheDirectory;
 
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
