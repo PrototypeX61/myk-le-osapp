@@ -430,10 +430,10 @@ function startApp() {
         currentOrderNumber = generateOrderNumber();
 
         try {
-            // 1️⃣ Crear imagen desde canvas
-    const ticketDataURL = drawTicketCanvas();
+            // 1. Crear imagen desde canvas
+            const ticketDataURL = drawTicketCanvas();
 
-    // 2️⃣ Convertir DataURL a Blob
+            // 2. Convertir DataURL a Blob
             const byteString = atob(ticketDataURL.split(',')[1]);
             const mimeString = ticketDataURL.split(',')[0].split(':')[1].split(';')[0];
             const ab = new ArrayBuffer(byteString.length);
@@ -443,7 +443,7 @@ function startApp() {
             }
             const blob = new Blob([ab], { type: mimeString });
 
-            // 3️⃣ Guardar en Descargas
+            // 3. Guardar en Descargas
             const fileName = `Ticket-Pedido${currentOrderNumber}.png`;
             const ruta = cordova.file.externalRootDirectory + "Download/" + fileName;
 
@@ -455,25 +455,8 @@ function startApp() {
                             fileWriter.write(blob);
                             alert("✅ Ticket guardado en Descargas");
                             console.log("Guardado en:", ruta);
-
-                            // 4️⃣ Continuar con WhatsApp
-                            const message = formatWhatsAppMessage();
-                            sendToWhatsApp(message);
-
-                        });
-                    });
-                },
-                function(error) {
-                    alert("❌ Error al acceder a Descargas");
-                    console.log(error);
-                }
-            );
-
-        } catch (error) {
-            alert("❌ Error al generar el Ticket");
-             console.error(error);
-        }
-
+            }
+                                          
             // 3. Format and open WhatsApp link
             const message = formatWhatsAppMessage();
             const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${message}`;
