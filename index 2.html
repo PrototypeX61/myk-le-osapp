@@ -220,7 +220,30 @@ function startApp() {
             }
         });
     };
-    
+    const shareTicketOnWhatsApp = (message, filePath) => {
+        if (window.plugins && window.plugins.socialsharing) {
+            window.plugins.socialsharing.shareViaWhatsApp(
+                message,
+                filePath,         // URI del archivo guardado (ej: file:///...)
+                null,
+                () => { 
+                    console.log('Compartido exitosamente');
+                    alert("✅ Pedido enviado por WhatsApp.");
+                },
+                (errormsg) => { 
+                    console.error('Error al compartir: ' + errormsg);
+                    alert("❌ Error al compartir el pedido. Intenta de nuevo.");
+                }
+            );
+        } else {
+            alert("Plugin de Social Sharing no disponible. Abriendo WhatsApp solo con el mensaje de texto.");
+            // Fallback (solo texto)
+            if (window.cordova && cordova.InAppBrowser) {
+                const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${message}`;
+                cordova.InAppBrowser.open(whatsappUrl, '_system');
+            }
+        }
+    };
     const RESTAURANT_NAME = "K’Leños Sabor 100% Valluno";
     const WHATSAPP_NUMBER = "573216350541";
     
