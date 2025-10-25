@@ -244,15 +244,6 @@ function startApp() {
             }
         }
     };
-    const b64toBlob = (dataURL, mimeType) => {
-        const base64 = dataURL.split(',')[1];
-        const binary = atob(base64);
-        const array = [];
-        for (let i = 0; i < binary.length; i++) {
-            array.push(binary.charCodeAt(i));
-        }
-        return new Blob([new Uint8Array(array)], { type: mimeType });
-    };
     const RESTAURANT_NAME = "K’Leños Sabor 100% Valluno";
     const WHATSAPP_NUMBER = "573216350541";
     
@@ -327,19 +318,14 @@ function startApp() {
     const scheduleWarning = document.getElementById('schedule-warning');
     
     // ✅ REQ 3.A: Helper function to convert Data URL to Blob
-    const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
-        const byteCharacters = atob(b64Data.split(',')[1]);
-        const byteArrays = [];
-        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-            const slice = byteCharacters.slice(offset, offset + sliceSize);
-            const byteNumbers = new Array(slice.length);
-            for (let i = 0; i < slice.length; i++) {
-                byteNumbers[i] = slice.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            byteArrays.push(byteArray);
+    const b64toBlob = (dataURL, mimeType) => {
+        const base64 = dataURL.split(',')[1];
+        const binary = atob(base64);
+        const array = [];
+        for (let i = 0; i < binary.length; i++) {
+            array.push(binary.charCodeAt(i));
         }
-        return new Blob(byteArrays, { type: contentType });
+        return new Blob([new Uint8Array(array)], { type: mimeType });
     };
 
     // ✅ REQ 3.B: Main function to save the ticket image using cordova-plugin-file
