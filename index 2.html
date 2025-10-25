@@ -353,7 +353,7 @@ function startApp() {
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
                     fileEntry.createWriter((fileWriter) => {
                         fileWriter.onwriteend = () => {
-                            console.log(`Ticket saved successfully to: ${fileEntry.toURL()}`);
+                            console.log(`Ticket saved successfully to: ${fileEntry.nativeURL()}`);
                             // Optionally show a native toast notification
                         };
                         fileWriter.onerror = (e) => {
