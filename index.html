@@ -543,6 +543,18 @@ function startApp() {
     const initializeApp = async () => {
         document.getElementById('restaurant-name-header').textContent = RESTAURANT_NAME;
         document.getElementById('address-text').textContent = LOCATION_DATA.address;
+
+        if (window.cordova) {
+            try {
+                // Hacemos que la app espere a que el usuario responda la solicitud de permiso.
+                const permissionGranted = await checkWritePermission(); 
+                if (!permissionGranted) {
+                    console.warn("La aplicación no tendrá acceso a almacenamiento.");
+                }
+            } catch (e) {
+                console.error("Fallo al inicializar permisos:", e);
+            }
+        }
         
         const encodedAddress = encodeURIComponent(LOCATION_DATA.address);
         // Corrected link for opening in Google Maps app
