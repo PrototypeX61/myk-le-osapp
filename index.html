@@ -499,18 +499,6 @@ function startApp() {
     sendOrderBtn.addEventListener('click', async () => {
         if (!validateOrder()) return; 
 
-        // 1. SOLICITAR PERMISO (USANDO await)
-        try {
-            // Llama a la función checkWritePermission que ya definiste
-            const permissionGranted = await checkWritePermission();
-            if (!permissionGranted) {
-                return; // Detener si el usuario deniega
-            }
-        } catch (e) {
-            console.error("Error al gestionar permisos: ", e);
-            return;
-        }
-
         // 2. GENERAR Y GUARDAR TICKET (USANDO await)
         currentOrderNumber = generateOrderNumber(); 
         const ticketDataURL = drawTicketOnCanvas(); 
