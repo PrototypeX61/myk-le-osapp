@@ -194,6 +194,56 @@ function handleExternalLinks() {
 // ✅ REQ 1: Main app logic is wrapped to be called by the correct event listener.
 function startApp() {
 
+    const checkWritePermission = () => {
+        return new Promise((resolve, reject) => {
+            if (window.cordova && window.cordova.plugins && cordova.plugins.permissions) {
+                const permissions = cordova.plugins.permissions;
+                const permission = permissions.WRITE_EXTERNAL_STORAGE;
+
+                permissions.hasPermission(permission, (status) => {
+                    if (status.hasPermission) {
+                        resolve(true); // Permiso concedido
+                    } else {
+                        permissions.requestPermission(permission, (status) => {
+                            if (status.hasPermission) {
+                                resolve(true); // Concedido después de la solicitud
+                            } else {
+                                alert("Permiso de almacenamiento denegado. No podemos guardar el ticket.");
+                                reject(false); // Denegado
+                            }
+                        }, reject);
+                    }
+                });
+            } else {
+                console.warn("Plugins de permisos no disponibles. Asumiendo permiso.");
+                resolve(true);
+            }
+        });
+    };
+    const shareTicketOnWhatsApp = (message, filePath) => {
+        if (window.plugins && window.plugins.socialsharing) {
+            window.plugins.socialsharing.shareViaWhatsApp(
+                message,
+                filePath,         // URI del archivo guardado (ej: file:///...)
+                null,
+                () => { 
+                    console.log('Compartido exitosamente');
+                    alert("✅ Pedido enviado por WhatsApp.");
+                },
+                (errormsg) => { 
+                    console.error('Error al compartir: ' + errormsg);
+                    alert("❌ Error al compartir el pedido. Intenta de nuevo.");
+                }
+            );
+        } else {
+            alert("Plugin de Social Sharing no disponible. Abriendo WhatsApp solo con el mensaje de texto.");
+            // Fallback (solo texto)
+            if (window.cordova && cordova.InAppBrowser) {
+                const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${message}`;
+                cordova.InAppBrowser.open(whatsappUrl, '_system');
+            }
+        }
+    };
     const RESTAURANT_NAME = "K’Leños Sabor 100% Valluno";
     const WHATSAPP_NUMBER = "573216350541";
     
@@ -268,53 +318,47 @@ function startApp() {
     const scheduleWarning = document.getElementById('schedule-warning');
     
     // ✅ REQ 3.A: Helper function to convert Data URL to Blob
-    const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
-        const byteCharacters = atob(b64Data.split(',')[1]);
-        const byteArrays = [];
-        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-            const slice = byteCharacters.slice(offset, offset + sliceSize);
-            const byteNumbers = new Array(slice.length);
-            for (let i = 0; i < slice.length; i++) {
-                byteNumbers[i] = slice.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            byteArrays.push(byteArray);
+    const b64toBlob = (dataURL, mimeType) => {
+        const base64 = dataURL.split(',')[1];
+        const binary = atob(base64);
+        const array = [];
+        for (let i = 0; i < binary.length; i++) {
+            array.push(binary.charCodeAt(i));
         }
-        return new Blob(byteArrays, { type: contentType });
+        return new Blob([new Uint8Array(array)], { type: mimeType });
     };
 
     // ✅ REQ 3.B: Main function to save the ticket image using cordova-plugin-file
     const saveTicketImage = (dataURL, fileName) => {
-        // Check if running in Cordova and the file plugin is available
-        if (window.cordova && window.resolveLocalFileSystemURL) {
-            const blob = b64toBlob(dataURL, 'image/png');
-            const storagePath = cordova.file.externalRootDirectory + 'Download/';
+        return new Promise((resolve, reject) => { 
+        
+            if (!(window.cordova && window.resolveLocalFileSystemURL && typeof b64toBlob === 'function')) {
+                console.error("Plugins de Cordova o b64toBlob no están listos.");
+                return reject("Plugins no listos o b64toBlob no definido."); 
+            }
+
+            const blob = b64toBlob(dataURL, 'image/png'); 
+            const storagePath = cordova.file.externalRootDirectory + 'Download/'; 
 
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
                     fileEntry.createWriter((fileWriter) => {
                         fileWriter.onwriteend = () => {
-                            console.log(`Ticket saved successfully to: ${fileEntry.toURL()}`);
-                            // Optionally show a native toast notification
+                            // CORRECCIÓN AQUÍ 👇: Usa la propiedad, no una función
+                            console.log(`Ticket guardado: ${fileEntry.nativeURL}`); 
+                            // ASEGÚRATE de que esta línea exista para resolver la Promise
+                            resolve(fileEntry.nativeURL); 
                         };
                         fileWriter.onerror = (e) => {
-                            console.error(`Failed file write: ${e.toString()}`);
-                            alert('Error: No se pudo guardar el tiquete.');
+                            console.error(`Error de escritura: ${e.toString()}`);
+                            reject(e); // Rechazar si hay error
                         };
                         fileWriter.write(blob);
-                    });
-                }, (err) => console.error("GetFile error: ", err));
-            }, (err) => console.error("ResolveFileSystem error: ", err));
-        } else {
-            // Fallback for standard browsers
-            console.log("Cordova File plugin not found. Using browser download.");
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = dataURL;
-            link.click();
-        }
+                    }, reject); // Rechazar si falla createWriter
+                }, reject); // Rechazar si falla getFile
+            }, reject); // Rechazar si falla resolveLocalFileSystemURL
+        });
     };
-
     const formatMenuPrice = (price) => `$${price.toFixed(1)}K`;
     const formatRealAmount = (realAmount) => `$${realAmount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
@@ -425,59 +469,44 @@ function startApp() {
     copyAddressBtn.addEventListener('click', () => { navigator.clipboard.writeText(LOCATION_DATA.address).then(() => { copyAddressBtn.textContent = '¡Copiado!'; setTimeout(() => { copyAddressBtn.textContent = 'Copiar Dirección'; }, 2000); }); });
     
     // ✅ REQ 2 & 3: Modified button listener to integrate Cordova plugins
-    sendOrderBtn.addEventListener('click', () => {
-        if (!validateOrder()) return;
-        currentOrderNumber = generateOrderNumber();
+    sendOrderBtn.addEventListener('click', async () => {
+        if (!validateOrder()) return; 
 
-            // 1. Crear imagen desde canvas
-            const ticketDataURL = drawTicketOnCanvas();
-
-            // 2. Convertir DataURL a Blob
-            const byteString = atob(ticketDataURL.split(',')[1]);
-            const mimeString = ticketDataURL.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
+        // 1. SOLICITAR PERMISO (USANDO await)
+        try {
+            // Llama a la función checkWritePermission que ya definiste
+            const permissionGranted = await checkWritePermission();
+            if (!permissionGranted) {
+                return; // Detener si el usuario deniega
             }
-            const blob = new Blob([ab], { type: mimeString });
+        } catch (e) {
+            console.error("Error al gestionar permisos: ", e);
+            return;
+        }
 
-            // 3. Guardar en Descargas
-            const fileName = `Ticket-Pedido${currentOrderNumber}.png`;
-            const ruta = cordova.file.externalRootDirectory + "Download/" + fileName;
+        // 2. GENERAR Y GUARDAR TICKET (USANDO await)
+        currentOrderNumber = generateOrderNumber(); 
+        const ticketDataURL = drawTicketOnCanvas(); 
 
-            window.resolveLocalFileSystemURL(
-                cordova.file.externalRootDirectory + "Download/",
-                function(dir) {
-                    dir.getFile(fileName, { create: true }, function(file) {
-                        file.createWriter(function(fileWriter) {
-                            fileWriter.write(blob);
-                            alert("✅ Ticket guardado en Descargas");
-                            console.log("Guardado en:", ruta);
-            }
-                                          
-            // 3. Format and open WhatsApp link
+        try {
             const message = formatWhatsAppMessage();
-            const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${message}`;
+            const fileName = `Ticket-Pedido-${currentOrderNumber}.png`;
+        
+            // Espera a que el archivo se guarde y obtén su URI (filePath)
+            const filePath = await saveTicketImage(ticketDataURL, fileName); 
 
-            // Use InAppBrowser for Cordova, window.open for browsers
-            if (window.cordova && cordova.InAppBrowser) {
-                console.log("Using InAppBrowser to open WhatsApp.");
-                cordova.InAppBrowser.open(whatsappUrl, '_system');
-            } else {
-                console.log("Using window.open as fallback.");
-                window.open(whatsappUrl, '_blank');
-            }
-            
-            // 4. Update UI
+            // 3. COMPARTIR TICKET CON IMAGEN ADJUNTA (Usando la nueva función)
+            shareTicketOnWhatsApp(message, filePath); 
+
+            // 4. ACTUALIZAR UI (tu lógica original)
             document.getElementById('order-number-display').textContent = currentOrderNumber;
             switchView('confirmation-view');
+        
         } catch (error) {
-            console.error("Error processing order:", error);
-            alert("Hubo un problema al procesar tu pedido. Por favor, intenta de nuevo.");
+            console.error("Error al procesar el pedido o guardar el ticket:", error);
+            alert("❌ Hubo un problema al procesar y enviar el pedido. Por favor, intenta de nuevo.");
         }
-    });
-    
+    });    
     newOrderBtn.addEventListener('click', resetApp);
     navMenuBtn.addEventListener('click', () => switchView('menu-view'));
     navCartBtn.addEventListener('click', () => switchView('cart-view'));
