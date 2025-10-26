@@ -195,7 +195,26 @@ const checkWritePermission = () => {
             }
           });
     };
+// index.html (Donde tienes definida la función onDeviceReady)
 
+function onDeviceReady() {
+    // Escuchar la URL de la aplicación
+    handleOpenURL(); 
+
+    // ✅ ¡ESTA ES LA CLAVE! 
+    // Aseguramos que se solicite el permiso tan pronto como Cordova esté listo.
+    checkWritePermission()
+        .then(granted => {
+             // Puedes guardar el estado del permiso si es necesario
+             console.log("Permiso de almacenamiento al inicio:", granted ? "CONCEDIDO" : "DENEGADO");
+             // Continuar con la inicialización de la app
+             startApp();
+        })
+        .catch(error => {
+            console.error("Fallo crítico al gestionar permisos. La app puede fallar.", error);
+            startApp(); // Intentar iniciar de todas formas
+        });
+}
 function handleExternalLinks() {
     // 1. Verificar si estamos en Cordova Y si el plugin InAppBrowser está cargado.
     if (!window.cordova || !window.cordova.InAppBrowser) {
