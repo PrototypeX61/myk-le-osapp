@@ -171,18 +171,22 @@
 document.addEventListener('deviceready', onDeviceReady, false);
 
 function onDeviceReady() {
-    console.log('Cordova listo ✅');
+    console.log("Cordova ready ⚡️");
+    
+    // 🚨 CÓDIGO AÑADIDO: Solicitar Permiso de Escritura al inicio de la app
+    // Usamos .then/.catch porque onDeviceReady no es una función async.
+    checkWritePermission().then(granted => {
+        if (granted) {
+            console.log("Permiso de Escritura obtenido al inicio.");
+        } else {
+            console.warn("Permiso de Escritura denegado al inicio.");
+        }
+    }).catch(error => {
+        console.error("Error al solicitar permiso de inicio:", error);
+    });
 
-    // 1. Verificamos si existe un contenedor para marcar el "ready"
-    const readyEl = document.getElementById('deviceready');
-    if (readyEl) readyEl.classList.add('ready');
-
-    // 2. 🚨 NUEVO CÓDIGO CRÍTICO: Solicitud de Permisos
-    // Llamamos a la función de chequeo de permisos para forzar la solicitud
-    // al usuario la primera vez que inicia la app.
-    requestStoragePermission(); 
+    // ... (otras inicializaciones como el estado del negocio, mapas, etc.) ...
 }
-
 // 🚨 Función para solicitar el permiso de Almacenamiento
 // (Esta función probablemente ya la tienes en tu archivo HTML, pero es mejor definirla aquí)
 function requestStoragePermission() {
@@ -524,16 +528,14 @@ function startApp() {
     copyAddressBtn.addEventListener('click', () => { navigator.clipboard.writeText(LOCATION_DATA.address).then(() => { copyAddressBtn.textContent = '¡Copiado!'; setTimeout(() => { copyAddressBtn.textContent = 'Copiar Dirección'; }, 2000); }); });
     
     // ✅ REQ 2 & 3: Modified button listener to integrate Cordova plugins
-    sendOrderBtn.addEventListener('click', async () => {
-        if (!validateOrder()) return; 
-
-        // 1. SOLICITAR PERMISO (USANDO await)
-        try {
-            // Llama a la función checkWritePermission que ya definiste
-            const permissionGranted = await checkWritePermission();
-            if (!permissionGranted) {
-                return; // Detener si el usuario deniega
-            }
+    sendOrderBtn.addEventListener('click', async (e) => {
+        // ...
+    
+        // 🚨 CÓDIGO DESCOMENTADO: Bloque de permisos activado
+        const permissionGranted = await checkWritePermission();
+        if (!permissionGranted) {
+            alert('Permiso de almacenamiento denegado. No se puede guardar el ticket.');
+            return;
         } catch (e) {
             console.error("Error al gestionar permisos: ", e);
             return;
