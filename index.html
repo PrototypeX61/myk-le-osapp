@@ -161,7 +161,41 @@
 
 
 <script>
-    
+
+const checkWritePermission = () => {
+        return new Promise((resolve, reject) => {
+             if (window.cordova && window.cordova.plugins && cordova.plugins.permissions) {
+                  const permissions = cordova.plugins.permissions;
+                  // El permiso de ESCRITURA incluye LECTURA
+                  const permission = permissions.WRITE_EXTERNAL_STORAGE; 
+
+                 permissions.hasPermission(permission, (status) => {
+                     if (status.hasPermission) {
+                        resolve(true); // Permiso concedido
+                    } else {
+                        // Si no tiene, solicitamos
+                        permissions.requestPermission(permission, (status) => {
+                             if (status.hasPermission) {
+                                resolve(true); // Concedido después de la solicitud
+                            } else {
+                                 // Aquí solo alertamos, pero resolvemos en false para que el flujo sepa.
+                                 alert("Permiso de almacenamiento denegado. No podremos guardar ni compartir el ticket.");
+                                 resolve(false); // Denegado
+                             }
+                        }, (e) => {
+                             // Error al solicitar (ej. usuario hace click fuera)
+                             console.error("Error al solicitar permiso:", e);
+                             reject(e); 
+                        });
+                    }
+                });
+            } else {
+                console.warn("Plugins de permisos no disponibles. Asumiendo permiso.");
+                resolve(true);
+            }
+          });
+    };
+
 function handleExternalLinks() {
     // 1. Verificar si estamos en Cordova Y si el plugin InAppBrowser está cargado.
     if (!window.cordova || !window.cordova.InAppBrowser) {
@@ -194,39 +228,6 @@ function handleExternalLinks() {
 // ✅ REQ 1: Main app logic is wrapped to be called by the correct event listener.
 function startApp() {
 
-    const checkWritePermission = () => {
-            return new Promise((resolve, reject) => {
-                if (window.cordova && window.cordova.plugins && cordova.plugins.permissions) {
-                    const permissions = cordova.plugins.permissions;
-                    // El permiso de ESCRITURA incluye LECTURA
-                    const permission = permissions.WRITE_EXTERNAL_STORAGE; 
-
-                    permissions.hasPermission(permission, (status) => {
-                        if (status.hasPermission) {
-                            resolve(true); // Permiso concedido
-                        } else {
-                            // Si no tiene, solicitamos
-                            permissions.requestPermission(permission, (status) => {
-                                if (status.hasPermission) {
-                                    resolve(true); // Concedido después de la solicitud
-                                } else {
-                                    // Aquí solo alertamos, pero resolvemos en false para que el flujo sepa.
-                                    alert("Permiso de almacenamiento denegado. No podremos guardar ni compartir el ticket.");
-                                    resolve(false); // Denegado
-                                }
-                            }, (e) => {
-                                 // Error al solicitar (ej. usuario hace click fuera)
-                                 console.error("Error al solicitar permiso:", e);
-                                 reject(e); 
-                            });
-                        }
-                    });
-                } else {
-                    console.warn("Plugins de permisos no disponibles. Asumiendo permiso.");
-                    resolve(true);
-                }
-            });
-        };
     const shareTicketOnWhatsApp = (message, filePath) => {
         if (window.plugins && window.plugins.socialsharing) {
             window.plugins.socialsharing.shareViaWhatsApp(
@@ -565,15 +566,7 @@ function startApp() {
         renderSocialLinks();
         switchView('menu-view');
         handleExternalLinks();
-        // 🚀 NUEVA LÍNEA: Solicitar permisos al inicio, solo si estamos en Cordova
-        if (window.cordova) {
-            try {
-                // Esperamos la solicitud de permiso (así no bloqueamos la UI por completo)
-                await checkWritePermission(); 
-            } catch (e) {
-                console.error("Fallo al inicializar permisos:", e);
-            }
-        }
+                
     };
 
     initializeApp();
