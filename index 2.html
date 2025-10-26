@@ -161,65 +161,6 @@
 
 
 <script>
-
-/*
- * Archivo principal de la app
- * Carga la WebApp localmente y habilita funciones nativas de Cordova.
- */
-
-// Se llama a esta función cuando Cordova ha terminado de inicializar sus plugins.
-document.addEventListener('deviceready', onDeviceReady, false);
-
-function onDeviceReady() {
-    console.log("Cordova ready ⚡️");
-    
-    // 🚨 CÓDIGO AÑADIDO: Solicitar Permiso de Escritura al inicio de la app
-    // Usamos .then/.catch porque onDeviceReady no es una función async.
-    checkWritePermission().then(granted => {
-        if (granted) {
-            console.log("Permiso de Escritura obtenido al inicio.");
-        } else {
-            console.warn("Permiso de Escritura denegado al inicio.");
-        }
-    }).catch(error => {
-        console.error("Error al solicitar permiso de inicio:", error);
-    });
-
-    // ... (otras inicializaciones como el estado del negocio, mapas, etc.) ...
-}
-// 🚨 Función para solicitar el permiso de Almacenamiento
-// (Esta función probablemente ya la tienes en tu archivo HTML, pero es mejor definirla aquí)
-function requestStoragePermission() {
-    // Si el objeto de permisos no está disponible, salimos.
-    if (!window.cordova || !window.plugins || !window.plugins.permissions) {
-        console.warn("Plugin de permisos no está disponible para la solicitud inicial.");
-        return;
-    }
-    
-    const permissions = window.plugins.permissions;
-    const WRITE_PERMISSION = permissions.WRITE_EXTERNAL_STORAGE;
-
-    permissions.checkPermission(WRITE_PERMISSION, function(status) {
-        if (!status.hasPermission) {
-            // Si no tiene el permiso, lo solicitamos.
-            permissions.requestPermission(WRITE_PERMISSION, function(status) {
-                if (status.hasPermission) {
-                    console.log("Permiso de Escritura concedido.");
-                } else {
-                    console.warn("Permiso de Escritura denegado por el usuario al inicio.");
-                    // Opcional: Mostrar un mensaje al usuario aquí.
-                }
-            }, null); // El segundo null es para la función de error, no la necesitamos aquí.
-        } else {
-            console.log("Permiso de Escritura ya concedido.");
-        }
-    }, null); // El segundo null es para la función de error.
-}
-
-// 📌 NOTA: Tu lógica de `checkWritePermission` que usas antes de guardar la imagen 
-// (probablemente en tu archivo HTML) debe seguir existiendo y siendo robusta,
-// ya que esta función solo solicita el permiso, pero la otra verifica el estado 
-// justo antes de realizar la operación de guardar la imagen.
     
 function handleExternalLinks() {
     // 1. Verificar si estamos en Cordova Y si el plugin InAppBrowser está cargado.
