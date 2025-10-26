@@ -635,9 +635,9 @@
 
         const encodedAddress = encodeURIComponent(LOCATION_DATA.address);
         // Set the specific GEO URI for the Maps button
-        openMapsBtn.href = LOCATION_DATA.map_url;
-        // Construct the Google Maps Embed API URL
-        document.getElementById('gmaps-iframe').src = `https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodedAddress}`;
+        openMapsBtn.href = `geo:3.4940402337368077,-76.50136182453736?q=K\'Leños - Sabor 100% Valluno`;
+        // Corrected iframe URL
+        document.getElementById('gmaps-iframe').src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497.80022739915904!2d-76.50136182453736!3d3.4940402337368077!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e30a10038b99d4f%3A0x8017b7164bfb50f4!2sK'Le%C3%B1os%20-%20Sabor%20100%25%20Valluno!5e0!3m2!1ses-419!2sco!4v1760857589673!5m2!1ses-419!2sco?q=...3?q=${encodedAddress}&zoom=17&output=embed`; 
          // IMPORTANT: Replace YOUR_API_KEY with your actual Google Maps Embed API key
 
 
