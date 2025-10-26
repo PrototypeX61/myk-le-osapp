@@ -195,31 +195,38 @@ function handleExternalLinks() {
 function startApp() {
 
     const checkWritePermission = () => {
-        return new Promise((resolve, reject) => {
-            if (window.cordova && window.cordova.plugins && cordova.plugins.permissions) {
-                const permissions = cordova.plugins.permissions;
-                const permission = permissions.WRITE_EXTERNAL_STORAGE;
+            return new Promise((resolve, reject) => {
+                if (window.cordova && window.cordova.plugins && cordova.plugins.permissions) {
+                    const permissions = cordova.plugins.permissions;
+                    // El permiso de ESCRITURA incluye LECTURA
+                    const permission = permissions.WRITE_EXTERNAL_STORAGE; 
 
-                permissions.hasPermission(permission, (status) => {
-                    if (status.hasPermission) {
-                        resolve(true); // Permiso concedido
-                    } else {
-                        permissions.requestPermission(permission, (status) => {
-                            if (status.hasPermission) {
-                                resolve(true); // Concedido después de la solicitud
-                            } else {
-                                alert("Permiso de almacenamiento denegado. No podemos guardar el ticket.");
-                                reject(false); // Denegado
-                            }
-                        }, reject);
-                    }
-                });
-            } else {
-                console.warn("Plugins de permisos no disponibles. Asumiendo permiso.");
-                resolve(true);
-            }
-        });
-    };
+                    permissions.hasPermission(permission, (status) => {
+                        if (status.hasPermission) {
+                            resolve(true); // Permiso concedido
+                        } else {
+                            // Si no tiene, solicitamos
+                            permissions.requestPermission(permission, (status) => {
+                                if (status.hasPermission) {
+                                    resolve(true); // Concedido después de la solicitud
+                                } else {
+                                    // Aquí solo alertamos, pero resolvemos en false para que el flujo sepa.
+                                    alert("Permiso de almacenamiento denegado. No podremos guardar ni compartir el ticket.");
+                                    resolve(false); // Denegado
+                                }
+                            }, (e) => {
+                                 // Error al solicitar (ej. usuario hace click fuera)
+                                 console.error("Error al solicitar permiso:", e);
+                                 reject(e); 
+                            });
+                        }
+                    });
+                } else {
+                    console.warn("Plugins de permisos no disponibles. Asumiendo permiso.");
+                    resolve(true);
+                }
+            });
+        };
     const shareTicketOnWhatsApp = (message, filePath) => {
         if (window.plugins && window.plugins.socialsharing) {
             window.plugins.socialsharing.shareViaWhatsApp(
@@ -525,7 +532,7 @@ function startApp() {
     addressInput.addEventListener('input', (e) => { deliveryAddress = e.target.value; });
     paymentMethodsContainer.addEventListener('click', (e) => { const btn = e.target.closest('.payment-option'); if (!btn) return; document.querySelectorAll('.payment-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); }); btn.classList.add('border-yellow-400', 'border-4'); btn.classList.remove('border-gray-300', 'border-2'); selectedPayment = btn.dataset.value; if (selectedPayment === 'Nequi' || selectedPayment === 'Bancolombia') { paymentProofNotice.classList.remove('hidden'); } else { paymentProofNotice.classList.add('hidden'); } });
 
-    const initializeApp = () => {
+    const initializeApp = async () => {
         document.getElementById('restaurant-name-header').textContent = RESTAURANT_NAME;
         document.getElementById('address-text').textContent = LOCATION_DATA.address;
         
@@ -557,7 +564,16 @@ function startApp() {
         renderPaymentMethods();
         renderSocialLinks();
         switchView('menu-view');
-    handleExternalLinks();
+        handleExternalLinks();
+        // 🚀 NUEVA LÍNEA: Solicitar permisos al inicio, solo si estamos en Cordova
+        if (window.cordova) {
+            try {
+                // Esperamos la solicitud de permiso (así no bloqueamos la UI por completo)
+                await checkWritePermission(); 
+            } catch (e) {
+                console.error("Fallo al inicializar permisos:", e);
+            }
+        }
     };
 
     initializeApp();
