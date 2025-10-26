@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: filesystem: ws: wss: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; media-src *; connect-src *;">
+    <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; connect-src *;">
     <title>K’Leños Sabor 100% Valluno - Pedidos</title>
-
+    
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,13 +16,12 @@
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #ffffff;
-            /* Prevent horizontal scroll */
-            overflow-x: hidden;
+            /* Limita el desplazamiento horizontal innecesario */
+            overflow: hidden;	
         }
         .view {
-            /* Adjust height based on viewport, considering footer */
-            min-height: calc(100vh - 4rem); /* Approx footer height */
-            overflow-y: auto;
+            height: 92vh;
+            overflow-y: auto; 
             transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
         }
         .hidden-view {
@@ -31,17 +30,14 @@
             pointer-events: none;
             position: absolute;
             width: 100%;
-            top: 0;
-            left: 0;
-            z-index: -1; /* Send inactive views back */
         }
-        /* Hide scrollbar */
-        .category-scroll::-webkit-scrollbar { display: none; }
-        .category-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Ensure footer doesn't overlap content */
-        #app-container { padding-bottom: 5rem; } /* Add padding for footer */
-
+        .category-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .category-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="max-w-lg mx-auto bg-white antialiased">
