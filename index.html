@@ -587,7 +587,8 @@ if (window.cordova) {
     // Running in a standard browser
     document.addEventListener('DOMContentLoaded', startApp, false);
 }
-
+    document.addEventListener('deviceready', onDeviceReady, false);
+}    
 </script>
 
 </body>
