@@ -582,9 +582,6 @@ function startApp() {
 // ✅ REQ 1: Initialization logic detects if it's in Cordova or a browser.
 if (window.cordova) {
     document.addEventListener('deviceready', onDeviceReady, false);
-} else {    
-    // Running inside Cordova wrapper
-    document.addEventListener('deviceready', startApp, false);
 } else {
     // Running in a standard browser
     document.addEventListener('DOMContentLoaded', startApp, false);
