@@ -323,86 +323,184 @@
     /** Saves ticket image to app's cache directory (NO PERMISSIONS NEEDED) */
     const saveTicketImage = (dataURL, fileName) => {
         return new Promise((resolve, reject) => {
-            // Ensure necessary Cordova APIs are available
-            if (!window.cordova || !window.cordova.file || !window.resolveLocalFileSystemURL) {
-                console.error("Cordova File plugin not ready.");
-                return reject("Plugin File no listo.");
+            console.log("=== INICIO saveTicketImage ===");
+            console.log("📝 Nombre de archivo:", fileName);
+        
+            // Verificar que el dataURL es válido
+            if (!dataURL || !dataURL.startsWith('data:image')) {
+                console.error("❌ dataURL inválido:", dataURL ? dataURL.substring(0, 50) : 'null');
+                return reject("DataURL inválido o vacío");
             }
+            console.log("✓ DataURL válido, longitud:", dataURL.length);
+        
+            // Verificaciones de APIs
+            if (!window.cordova) {
+                console.error("❌ window.cordova no existe");
+                return reject("Cordova no disponible");
+            }
+        
+            if (!window.cordova.file) {
+                console.error("❌ window.cordova.file no existe");
+                return reject("Plugin File no disponible");
+            }
+        
+            if (!window.resolveLocalFileSystemURL) {
+                console.error("❌ window.resolveLocalFileSystemURL no existe");
+                return reject("API FileSystem no disponible");
+            }
+        
             if (typeof b64toBlob !== 'function') {
-                return reject("b64toBlob no definido.");
+                console.error("❌ b64toBlob no es función");
+                return reject("b64toBlob no definido");
             }
 
+            console.log("✓ Todas las APIs disponibles");
+        
+            // Crear blob
             const blob = b64toBlob(dataURL, 'image/png');
             if (!blob) {
-                 return reject("Error creating blob from image data.");
+                console.error("❌ Error creando blob");
+                return reject("Error creando blob");
             }
-            // Use cache directory - it's always writable without specific permissions
+        
+            console.log("✓ Blob creado:", blob.size, "bytes", "Tipo:", blob.type);
+        
+            // Use cache directory
             const storagePath = cordova.file.cacheDirectory;
+            console.log("📁 Ruta de cache:", storagePath);
 
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
+                console.log("✓ Directorio resuelto:", dirEntry.nativeURL);
+            
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
+                    console.log("✓ Archivo creado/abierto:", fileEntry.nativeURL);
+                    console.log("📍 Ruta completa del archivo:", fileEntry.toURL());
+                
                     fileEntry.createWriter((fileWriter) => {
                         fileWriter.onwriteend = () => {
-                            console.log(`Ticket guardado en caché: ${fileEntry.nativeURL}`);
-                            resolve(fileEntry.nativeURL); // Resolve with the native file path
+                            console.log(`✅ Ticket guardado exitosamente`);
+                            console.log(`📂 Ruta nativa: ${fileEntry.nativeURL}`);
+                            console.log(`🔗 Ruta URL: ${fileEntry.toURL()}`);
+                        
+                            // Verificar que el archivo existe y tiene tamaño
+                            fileEntry.file((file) => {
+                                console.log(`📊 Tamaño del archivo guardado: ${file.size} bytes`);
+                                if (file.size === 0) {
+                                    console.error("❌ El archivo está vacío!");
+                                    reject("El archivo guardado está vacío");
+                                } else {
+                                    // Devolver AMBAS rutas para probar
+                                    resolve({
+                                        nativeURL: fileEntry.nativeURL,
+                                        cdvURL: fileEntry.toURL(),
+                                        size: file.size
+                                    });
+                                }
+                            }, (err) => {
+                                console.error("❌ Error verificando archivo:", err);
+                                // Igual devolver las rutas aunque no se pueda verificar
+                                resolve({
+                                    nativeURL: fileEntry.nativeURL,
+                                    cdvURL: fileEntry.toURL(),
+                                    size: blob.size
+                                });
+                            });
                         };
+                    
                         fileWriter.onerror = (e) => {
-                            console.error(`Error de escritura: ${e.toString()}`);
+                            console.error(`❌ Error de escritura:`, e);
                             reject(e);
                         };
+                    
+                        console.log("⏳ Escribiendo archivo...");
                         fileWriter.write(blob);
-                    }, (err) => { console.error("Error creating FileWriter:", err); reject(err); });
-                }, (err) => { console.error("Error getting File:", err); reject(err); });
-            }, (err) => { console.error("Error resolving Cache Directory URL:", err); reject(err); });
+                    
+                    }, (err) => { 
+                        console.error("❌ Error creating FileWriter:", err); 
+                        reject(err); 
+                    });
+                }, (err) => { 
+                    console.error("❌ Error getting File:", err); 
+                    reject(err); 
+                });
+            }, (err) => { 
+                console.error("❌ Error resolving Cache Directory:", err); 
+                reject(err); 
+            });
         });
     };
 
     /** Shares message and image file via WhatsApp using SocialSharing plugin */
-    const shareTicketOnWhatsApp = (message, filePath) => {
+    const shareTicketOnWhatsApp = (message, fileInfo) => {
         console.log("=== INICIO shareTicketOnWhatsApp ===");
-        console.log("Message:", message.substring(0, 100) + "...");
-        console.log("File path:", filePath);
+        console.log("📝 Message length:", message.length);
+        console.log("📂 File info:", fileInfo);
     
         const plainMessage = decodeURIComponent(message);
 
         if (window.plugins && window.plugins.socialsharing) {
-            // USAR shareViaWhatsAppToReceiver para enviar directamente a un número
-            // Esto evita el selector de apps de Android
-            window.plugins.socialsharing.shareViaWhatsAppToReceiver(
-                WHATSAPP_NUMBER,     // Número de destino (sin +)
-                plainMessage,        // Mensaje
-                filePath,           // Archivo de imagen
-                null,               // URL (no necesaria)
-                () => {
-                    console.log('✅ Compartido exitosamente vía WhatsApp');
-                    // NO mostrar alert aquí, ya que el usuario verá WhatsApp abierto
-                },
-                (errormsg) => {
-                    console.error('❌ Error al compartir vía WhatsApp:', errormsg);
-                
-                    // Si falla, intentar con método alternativo
-                    console.log("⚠️ Intentando método alternativo...");
-                
-                    // Método alternativo: Abrir WhatsApp con URL scheme
-                    if (window.cordova && cordova.InAppBrowser) {
-                        const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${message}`;
-                        cordova.InAppBrowser.open(whatsappUrl, '_system');
-                    
-                        // Mostrar alerta explicando que deben adjuntar la imagen manualmente
-                        setTimeout(() => {
-                            alert("⚠️ Por favor, adjunta manualmente la imagen del ticket que se guardó en tu dispositivo.");
-                        }, 500);
-                    } else {
-                        alert("❌ Error al intentar abrir WhatsApp. Verifica que esté instalado.");
-                    }
+            console.log("✓ Plugin SocialSharing disponible");
+        
+            // Probar con AMBAS rutas
+            const pathsToTry = [
+                fileInfo.nativeURL,  // file:///data/user/0/.../cache/Ticket-xxx.png
+                fileInfo.cdvURL      // cdvfile://localhost/cache/Ticket-xxx.png
+            ];
+        
+            console.log("🔄 Probando rutas:", pathsToTry);
+        
+            // Función recursiva para probar cada ruta
+            const tryPath = (index) => {
+                if (index >= pathsToTry.length) {
+                    console.error("❌ Todas las rutas fallaron");
+                    alert("❌ No se pudo compartir la imagen. Se enviará solo el texto.");
+                    // Fallback: solo texto
+                    openWhatsAppTextOnly(plainMessage);
+                    return;
                 }
-            );
+            
+                const currentPath = pathsToTry[index];
+                console.log(`🔄 Intentando con ruta ${index + 1}/${pathsToTry.length}:`, currentPath);
+            
+                window.plugins.socialsharing.shareViaWhatsApp(
+                    plainMessage,
+                    currentPath,
+                    null,
+                    () => {
+                        console.log(`✅ Éxito con ruta ${index + 1}:`, currentPath);
+                        setTimeout(() => {
+                            alert(`✅ WhatsApp abierto.\nEnvía al: +${WHATSAPP_NUMBER.substring(0,2)} ${WHATSAPP_NUMBER.substring(2)}`);
+                        }, 500);
+                    },
+                    (errormsg) => {
+                        console.error(`❌ Falló ruta ${index + 1}:`, errormsg);
+                        // Probar siguiente ruta
+                        tryPath(index + 1);
+                    }
+                );
+            };
+        
+            // Empezar con la primera ruta
+            tryPath(0);
+        
         } else {
-            console.warn("❌ Plugin SocialSharing no disponible.");
-            alert("Plugin de compartir no disponible. Reinstala la app.");
+            console.error("❌ Plugin SocialSharing no disponible");
+            alert("Error: Plugin de compartir no está disponible.");
         }
     };
 
+    /** Fallback: Abrir WhatsApp solo con texto */
+    const openWhatsAppTextOnly = (message) => {
+        console.log("⚠️ Abriendo WhatsApp solo con texto...");
+        if (window.cordova && cordova.InAppBrowser) {
+            const encodedMsg = encodeURIComponent(message);
+            const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${encodedMsg}`;
+            cordova.InAppBrowser.open(whatsappUrl, '_system');
+        } else {
+            alert("❌ No se pudo abrir WhatsApp.");
+        }
+    };
+    
     /** Handles opening external links (http, geo, mailto, app protocols) in the system browser/app */
     function handleExternalLinks() {
         if (!window.cordova || !cordova.InAppBrowser) {
