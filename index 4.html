@@ -320,68 +320,69 @@
     // 5. CORDOVA PLUGIN INTEGRATION FUNCTIONS
     // =========================================================
 
-    /** Saves ticket image to app's cache directory (NO PERMISSIONS NEEDED) */
+    /** Saves ticket image to app's external cache directory (MEJOR PARA COMPARTIR) */
     const saveTicketImage = (dataURL, fileName) => {
         return new Promise((resolve, reject) => {
             console.log("=== INICIO saveTicketImage ===");
             console.log("📝 Nombre de archivo:", fileName);
-        
+    
             // Verificar que el dataURL es válido
             if (!dataURL || !dataURL.startsWith('data:image')) {
                 console.error("❌ dataURL inválido:", dataURL ? dataURL.substring(0, 50) : 'null');
                 return reject("DataURL inválido o vacío");
             }
             console.log("✓ DataURL válido, longitud:", dataURL.length);
-        
+    
             // Verificaciones de APIs
             if (!window.cordova) {
                 console.error("❌ window.cordova no existe");
                 return reject("Cordova no disponible");
             }
-        
+    
             if (!window.cordova.file) {
                 console.error("❌ window.cordova.file no existe");
                 return reject("Plugin File no disponible");
             }
-        
+    
             if (!window.resolveLocalFileSystemURL) {
                 console.error("❌ window.resolveLocalFileSystemURL no existe");
                 return reject("API FileSystem no disponible");
             }
-        
+    
             if (typeof b64toBlob !== 'function') {
                 console.error("❌ b64toBlob no es función");
                 return reject("b64toBlob no definido");
             }
 
             console.log("✓ Todas las APIs disponibles");
-        
+    
             // Crear blob
             const blob = b64toBlob(dataURL, 'image/png');
             if (!blob) {
                 console.error("❌ Error creando blob");
                 return reject("Error creando blob");
             }
-        
+    
             console.log("✓ Blob creado:", blob.size, "bytes", "Tipo:", blob.type);
-        
-            // Use cache directory
-            const storagePath = cordova.file.externalRootDirectory + 'Download/';
-            console.log("📁 Ruta de cache:", storagePath);
+    
+            // 🎯 USAR externalCacheDirectory - NO REQUIERE PERMISOS
+            // Esta es una ubicación temporal pero COMPARTIBLE con otras apps
+            const storagePath = cordova.file.externalCacheDirectory;
+            console.log("📁 Ruta de almacenamiento:", storagePath);
 
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
                 console.log("✓ Directorio resuelto:", dirEntry.nativeURL);
-            
+        
                 dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
                     console.log("✓ Archivo creado/abierto:", fileEntry.nativeURL);
                     console.log("📍 Ruta completa del archivo:", fileEntry.toURL());
-                
+            
                     fileEntry.createWriter((fileWriter) => {
                         fileWriter.onwriteend = () => {
                             console.log(`✅ Ticket guardado exitosamente`);
                             console.log(`📂 Ruta nativa: ${fileEntry.nativeURL}`);
                             console.log(`🔗 Ruta URL: ${fileEntry.toURL()}`);
-                        
+                    
                             // Verificar que el archivo existe y tiene tamaño
                             fileEntry.file((file) => {
                                 console.log(`📊 Tamaño del archivo guardado: ${file.size} bytes`);
@@ -389,7 +390,7 @@
                                     console.error("❌ El archivo está vacío!");
                                     reject("El archivo guardado está vacío");
                                 } else {
-                                    // Devolver AMBAS rutas para probar
+                                    // Devolver SOLO la ruta nativa (la más compatible)
                                     resolve({
                                         nativeURL: fileEntry.nativeURL,
                                         cdvURL: fileEntry.toURL(),
@@ -406,15 +407,15 @@
                                 });
                             });
                         };
-                    
+                
                         fileWriter.onerror = (e) => {
                             console.error(`❌ Error de escritura:`, e);
                             reject(e);
                         };
-                    
+                
                         console.log("⏳ Escribiendo archivo...");
                         fileWriter.write(blob);
-                    
+                
                     }, (err) => { 
                         console.error("❌ Error creating FileWriter:", err); 
                         reject(err); 
@@ -424,7 +425,7 @@
                     reject(err); 
                 });
             }, (err) => { 
-                console.error("❌ Error resolving Cache Directory:", err); 
+                console.error("❌ Error resolving directory:", err); 
                 reject(err); 
             });
         });
