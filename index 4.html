@@ -906,7 +906,7 @@
 
         if (window.cordova && window.cordova.file) {
             console.log("✓ Plugin File detectado:", cordova.file);
-            console.log("✓ Download Directory:", cordova.file.externalRootDirectory + 'Download/');
+            console.log("✓ Download Directory:", cordova.file.externalCacheDirectory);
         } else {
             console.error("✗ Plugin File NO detectado");
             alert("Error: Plugin de archivos no disponible. Reinstala la app.");
