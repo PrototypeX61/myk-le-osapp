@@ -366,7 +366,7 @@
             console.log("✓ Blob creado:", blob.size, "bytes", "Tipo:", blob.type);
         
             // Use cache directory
-            const storagePath = cordova.file.cacheDirectory;
+            const storagePath = cordova.file.externalRootDirectory + 'Download/';
             console.log("📁 Ruta de cache:", storagePath);
 
             window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
@@ -799,30 +799,154 @@
         initializeApp();
     }
 
+    /**
+     * Verifica y solicita el permiso de ESCRITURA en el almacenamiento externo.
+     * @returns {Promise<boolean>} Resuelve a true si el permiso está concedido.
+     */
+    function checkWritePermission() {
+        return new Promise((resolve, reject) => {
+            // 1. Definir el permiso que queremos
+            const permission = cordova.plugins.permissions.WRITE_EXTERNAL_STORAGE;
+
+            // 2. Verificar si el permiso ya está concedido
+            cordova.plugins.permissions.checkPermission(permission, (status) => {
+                if (status.hasPermission) {
+                    // El permiso ya está concedido
+                    resolve(true);
+                } else {
+                    // 3. Si no está concedido, solicitarlo
+                    cordova.plugins.permissions.requestPermission(permission, (status) => {
+                        if (status.hasPermission) {
+                            // Permiso concedido después de la solicitud
+                            resolve(true);
+                        } else {
+                            // Permiso denegado por el usuario
+                            resolve(false);
+                        }
+                    }, (error) => {
+                        // Error al solicitar el permiso (e.g., error técnico)
+                        console.error("Error al solicitar permiso de escritura:", error);
+                        reject(error);
+                    });
+                }
+            }, (error) => {
+                // Error al verificar el permiso
+                console.error("Error al verificar permiso de escritura:", error);
+                reject(error);
+            });
+        });
+    }
+
     /** Cordova's main entry point */
-    function onDeviceReady() {
+    async function onDeviceReady() {
         console.log("onDeviceReady fired.");
-        
+
         // Verificar que los plugins necesarios estén disponibles
+        if (window.cordova && window.cordova.plugins && window.cordova.plugins.permissions) {
+            console.log("✓ Plugin Android Permissions detectado");
+        } else {
+            console.warn("✗ Plugin Android Permissions NO detectado");
+            alert("⚠️ Plugin de permisos no disponible. Algunas funciones pueden no funcionar.");
+        }
+
         if (window.cordova && window.cordova.file) {
             console.log("✓ Plugin File detectado:", cordova.file);
-            console.log("✓ Cache Directory:", cordova.file.cacheDirectory);
+            console.log("✓ Download Directory:", cordova.file.externalRootDirectory + 'Download/');
         } else {
             console.error("✗ Plugin File NO detectado");
             alert("Error: Plugin de archivos no disponible. Reinstala la app.");
         }
-        
+    
         if (window.plugins && window.plugins.socialsharing) {
             console.log("✓ Plugin SocialSharing detectado");
         } else {
             console.warn("✗ Plugin SocialSharing NO detectado");
         }
-        
+    
         if (cordova.InAppBrowser) {
             console.log("✓ Plugin InAppBrowser detectado");
         } else {
             console.warn("✗ Plugin InAppBrowser NO detectado");
         }
+
+        // 🔐 SOLICITAR PERMISOS DE ALMACENAMIENTO
+        if (window.cordova && window.cordova.plugins && window.cordova.plugins.permissions) {
+            console.log("📋 Verificando permisos de almacenamiento...");
+        
+            try {
+                const hasPermission = await requestStoragePermissions();
+                if (hasPermission) {
+                    console.log("✅ Permisos de almacenamiento concedidos");
+                } else {
+                    console.warn("⚠️ Permisos de almacenamiento denegados");
+                    alert("⚠️ La app necesita permisos de almacenamiento para guardar y compartir tickets.\n\nPor favor, concede los permisos en la configuración de la app.");
+                }
+            } catch (error) {
+                console.error("❌ Error al solicitar permisos:", error);
+            }
+        }
+    
+        // Inicializar la app
+        startApp();
+    }
+
+    /**
+     * Solicita permisos de almacenamiento (lectura y escritura)
+     * @returns {Promise<boolean>} true si los permisos fueron concedidos
+     */
+    async function requestStoragePermissions() {
+        return new Promise((resolve, reject) => {
+            const permissions = cordova.plugins.permissions;
+        
+            // Lista de permisos necesarios
+            const permissionsToRequest = [
+                permissions.READ_EXTERNAL_STORAGE,
+                permissions.WRITE_EXTERNAL_STORAGE
+            ];
+        
+            console.log("🔍 Verificando permisos:", permissionsToRequest);
+        
+            // Verificar si ya tenemos los permisos
+            permissions.checkPermission(
+                permissions.READ_EXTERNAL_STORAGE,
+                (readStatus) => {
+                    permissions.checkPermission(
+                        permissions.WRITE_EXTERNAL_STORAGE,
+                        (writeStatus) => {
+                            if (readStatus.hasPermission && writeStatus.hasPermission) {
+                                console.log("✓ Todos los permisos ya están concedidos");
+                                resolve(true);
+                            } else {
+                                console.log("⚠️ Solicitando permisos al usuario...");
+                            
+                                // Solicitar los permisos
+                                permissions.requestPermissions(
+                                    permissionsToRequest,
+                                    (result) => {
+                                        const allGranted = result.hasPermission;
+                                        console.log("📝 Resultado de la solicitud:", allGranted);
+                                        resolve(allGranted);
+                                    },
+                                    (error) => {
+                                        console.error("❌ Error al solicitar permisos:", error);
+                                        reject(error);
+                                    }
+                                );
+                            }
+                        },
+                        (error) => {
+                            console.error("❌ Error verificando WRITE_EXTERNAL_STORAGE:", error);
+                            reject(error);
+                        }
+                    );
+                },
+                (error) => {
+                    console.error("❌ Error verificando READ_EXTERNAL_STORAGE:", error);
+                    reject(error);
+                }
+            );
+        });
+    }
         
         // Now it's safe to call Cordova plugins and initialize the app logic
         startApp();
