@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; connect-src *;">
+    <title>K’Leños Sabor 100% Valluno - Pedidos</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #ffffff;
+            /* Limita el desplazamiento horizontal innecesario */
+            overflow: hidden;	
+        }
+        .view {
+            height: 92vh;
+            overflow-y: auto; 
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .hidden-view {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+            position: absolute;
+            width: 100%;
+        }
+        .category-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .category-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="max-w-lg mx-auto bg-white antialiased">
+
+    <div id="app-container">
+
+        <div id="menu-view" class="view">
+             <header class="sticky top-0 bg-white z-10 border-b-2 border-black p-3 flex items-center justify-between space-x-3">
+                <div class="flex items-center space-x-3">
+                    <img src="https://static.wixstatic.com/media/777c76_3f3b35a51e8841f78a4f9e65d8cc7604~mv2.png/v1/fill/w_818,h_544,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/777c76_3f3b35a51e8841f78a4f9e65d8cc7604~mv2.png" alt="Logo K'Leños" class="w-14 h-auto">
+                    <div>
+                        <h1 id="restaurant-name-header" class="text-lg font-black text-red-600"></h1>
+                        <p class="text-xs font-medium text-gray-700">Promos y 2x1 todos los días</p>
+                    </div>
+                </div>
+                <button id="location-btn" class="flex items-center space-x-1 bg-gray-100 border border-gray-300 rounded-full py-1 px-3 transform hover:scale-105 transition-transform">
+                    <span class="text-xl">📍</span>
+                    <span class="text-xs font-bold">Sedes</span>
+                </button>
+            </header>
+
+            <div id="status-box-container" class="p-3">
+                <div id="operating-status-box" class="p-3 border-2 rounded-xl text-center shadow-lg mx-3 mt-3 transition-all duration-300">
+                    <span id="status-icon" class="text-2xl"></span>
+                    <div>
+                        <p id="status-message-main" class="font-bold text-sm"></p>
+                        <p id="status-message-secondary" class="text-xs"></p>
+                    </div>
+                </div>
+            </div>
+
+            <section id="filters-section" class="p-3 bg-white">
+                 <div class="flex overflow-x-auto category-scroll space-x-2 mb-3">
+                    <button data-category="all" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Todos</button>
+                    <button data-category="Promos" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Promos</button>
+                    <button data-category="Hamburguesas" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Hamburguesas</button>
+                    <button data-category="Perros Calientes" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Perros</button>
+                    <button data-category="Asados" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Asados</button>
+                    <button data-category="Fritos" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Fritos</button>
+                    <button data-category="Parrillada" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Parrillada</button>
+                    <button data-category="Adiciones" class="category-btn flex-shrink-0 bg-red-600 text-white font-bold py-1.5 px-3 rounded-full shadow-md text-sm transform hover:scale-105 transition-transform duration-200">Adiciones</button>
+                </div>
+                <div id="social-links-container" class="flex justify-center items-center space-x-5"></div>
+            </section>
+
+            <main id="product-list" class="p-3 grid grid-cols-1 gap-3"></main>
+
+            <section class="p-6 text-center bg-gray-50 border-t-2 border-b-2 border-red-600 border-l-2 border-r-2 mx-3 rounded-xl shadow-inner my-5">
+                <h2 class="text-xl font-black text-red-600 mb-2">🔥 ¡Siempre con Sabor Valluno! 🔥</h2>
+                <p class="text-gray-700 text-base font-medium">Estamos trabajando para añadir más delicias a nuestro menú.</p>
+                <p class="text-sm text-gray-500 mt-1">¡Vuelve pronto para probar nuestras nuevas sorpresas!</p>
+            </section>
+        </div>
+
+        <div id="cart-view" class="view hidden-view">
+            <header class="p-3 border-b-2 border-black"><h1 class="text-xl font-black text-red-600 text-center">🛒 Tu Pedido</h1></header>
+            <section id="cart-items-container" class="p-3 space-y-3"></section>
+            <div id="empty-cart-message" class="p-8 text-center text-gray-500 hidden"><p class="text-base">Tu carrito está vacío.</p><p class="text-sm">¡Agrega algo delicioso del menú!</p></div>
+            <section class="px-3 py-2"><div class="flex justify-between items-center text-lg font-bold border-t-2 border-black pt-3"><span>TOTAL:</span><span id="cart-total" class="text-red-600">$0.00</span></div></section>
+
+            <section class="p-3">
+                <h2 class="text-lg font-bold text-red-600 mb-2">👤 Tus Datos</h2>
+                <div class="space-y-2">
+                    <input type="text" id="customer-name-input" placeholder="Tu nombre completo" class="w-full p-2.5 border-2 border-gray-300 rounded-lg text-sm focus:border-yellow-400 focus:ring-yellow-400" required>
+                    <input type="tel" id="customer-phone-input" placeholder="Tu número de WhatsApp (ej: 310...)" class="w-full p-2.5 border-2 border-gray-300 rounded-lg text-sm focus:border-yellow-400 focus:ring-yellow-400" required>
+                </div>
+            </section>
+
+            <section id="scheduling-section" class="p-3 border-t-2 border-gray-100">
+                <h2 class="text-lg font-bold text-red-600 mb-2">⏰ ¿Cuándo lo quieres?</h2>
+                <div class="space-y-3">
+                    <div id="delivery-time-now-option" class="time-option w-full text-left p-3 border-2 border-gray-300 rounded-lg flex items-center space-x-3 transition-all cursor-pointer border-yellow-400 border-4">
+                        <span class="text-xl">🚀</span><span class="font-semibold text-sm">Lo quiero AHORA (Entrega tan pronto como sea posible)</span>
+                    </div>
+                    <div id="delivery-time-schedule-option" class="time-option w-full text-left p-3 border-2 border-gray-300 rounded-lg flex items-center space-x-3 transition-all cursor-pointer">
+                        <span class="text-xl">🗓️</span><span class="font-semibold text-sm">Programar para después</span>
+                    </div>
+
+                    <div id="schedule-input-container" class="pl-4 hidden space-y-2">
+                        <input type="date" id="scheduled-date-input" class="w-full p-2.5 border-2 border-gray-300 rounded-lg text-sm focus:border-yellow-400 focus:ring-yellow-400">
+                        <input type="time" id="scheduled-time-input" class="w-full p-2.5 border-2 border-gray-300 rounded-lg text-sm focus:border-yellow-400 focus:ring-yellow-400">
+                        <p id="schedule-warning" class="text-xs text-red-500 mt-1 hidden">⚠️ La hora seleccionada está fuera de nuestro horario de servicio. Por favor, revisa el horario.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="p-3"><h2 class="text-lg font-bold text-red-600 mb-2">📦 Tipo de Entrega</h2><div id="delivery-options" class="space-y-2"><button data-value="A Domicilio" class="delivery-option w-full text-left p-3 border-2 border-gray-300 rounded-lg flex items-center space-x-3 transition-all"><span class="text-xl">🏠</span><span class="font-semibold text-sm">A Domicilio</span></button><div id="address-input-container" class="pl-4 hidden"><input type="text" id="address-input" placeholder="Dirección completa (barrio, apto, etc.)" class="w-full p-2 border-2 border-gray-300 rounded-lg text-sm focus:border-yellow-400 focus:ring-yellow-400"><p class="text-xs text-gray-500 mt-1">Puedes incluir enlaces de Google Maps o Waze.</p></div><button data-value="Para Recoger en Caja" class="delivery-option w-full text-left p-3 border-2 border-gray-300 rounded-lg flex items-center space-x-3 transition-all"><span class="text-xl">🥡</span><span class="font-semibold text-sm">Para Recoger en Caja</span></button><button data-value="Comer en el Establecimiento" class="delivery-option w-full text-left p-3 border-2 border-gray-300 rounded-lg flex items-center space-x-3 transition-all"><span class="text-xl">🍽️</span><span class="font-semibold text-sm">Comer en el Establecimiento</span></button></div></section>
+
+            <section class="p-3"><h2 class="text-lg font-bold text-red-600 mb-2">💳 Método de Pago</h2><div id="payment-methods-container" class="grid grid-cols-2 gap-2"></div><div id="payment-proof-notice" class="mt-3 p-2 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg text-xs hidden"><p>📎 Recuerda enviar tu comprobante de pago vía WhatsApp para validar tu pedido.</p><p class="mt-1 font-bold">⚠️ Para pedidos programados el pago en línea es obligatorio.</p></div></section>
+
+            <section class="p-3"><button id="send-order-btn" class="w-full bg-green-500 text-white font-bold text-base py-3 px-4 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-200 flex items-center justify-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg><span>Enviar Pedido por WhatsApp</span></button></section>
+        </div>
+
+        <div id="confirmation-view" class="view hidden-view p-6 text-center flex flex-col items-center justify-center min-h-screen"><div class="bg-green-100 rounded-full p-3 mb-4"><svg class="w-14 h-14 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div><h1 class="text-2xl font-black text-green-600 mb-1">¡Pedido Enviado!</h1><p class="text-gray-600 text-sm mb-5">Tu pedido ha sido recibido y está siendo preparado.</p><div class="bg-yellow-400 border-2 border-black text-black font-bold p-3 rounded-lg shadow-lg mb-5 w-full max-w-xs"><p class="text-xs">NÚMERO DE PEDIDO</p><p id="order-number-display" class="text-3xl tracking-widest"></p></div><p class="text-gray-500 text-sm mb-6">Guarda este número para consultas.</p><button id="new-order-btn" class="w-full max-w-xs bg-red-600 text-white font-bold py-2.5 px-5 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-200">Hacer otro pedido</button></div>
+
+        <div id="location-view" class="view hidden-view">
+            <header class="p-3 border-b-2 border-black"><h1 class="text-xl font-black text-red-600 text-center">📍 Nuestras Sedes</h1></header>
+            <div class="p-4">
+                <div class="bg-white border-2 border-black rounded-lg p-4 shadow-md">
+                    <h2 class="font-bold text-lg">Sede Principal - Brisas de los Álamos</h2>
+                    <p id="address-text" class="text-gray-700 mt-1 mb-4"></p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <a id="open-maps-btn" href="#" target="_system" class="text-center w-full bg-blue-500 text-white font-bold text-sm py-2.5 px-3 rounded-lg shadow-md hover:bg-blue-600 transition-colors">Abrir en Google Maps</a>
+                        <button id="copy-address-btn" class="w-full bg-gray-200 text-black font-bold text-sm py-2.5 px-3 rounded-lg shadow-md hover:bg-gray-300 transition-colors">Copiar Dirección</button>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 h-96">
+                <iframe
+                    id="gmaps-iframe"
+                    class="w-full h-full border-2 border-black rounded-lg"
+                    loading="lazy"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade"
+                    src="">
+                </iframe>
+            </div>
+        </div>
+
+    </div> <footer id="nav-footer" class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-black text-white p-1.5 flex justify-around items-center border-t-2 border-yellow-400 z-20">
+        <button id="nav-menu-btn" class="flex-1 text-center py-2 px-3 bg-red-600 rounded-md font-bold mx-1 transition-transform transform hover:scale-105 text-sm">🏠 Menú</button>
+        <button id="nav-cart-btn" class="flex-1 text-center py-2 px-3 bg-yellow-400 text-black rounded-md font-bold mx-1 transition-transform transform hover:scale-105 text-sm">🛒 Pedido <span id="cart-count" class="bg-red-600 text-white text-xs font-bold rounded-full px-1.5 py-0.5 ml-1 hidden">0</span></button>
+    </footer>
+
+    <canvas id="ticketCanvas" class="hidden"></canvas>
+
+<script src="cordova.js"></script>
+
+<script>
+    // =========================================================
+    // 1. GLOBAL CONSTANTS & CONFIGURATION
+    // =========================================================
+    const RESTAURANT_NAME = "K’Leños Sabor 100% Valluno";
+    const WHATSAPP_NUMBER = "573216350541"; // Use only digits
+
+    const LOCATION_DATA = {
+        address: "Cl. 75a Nte. #2-110, Acopi, Cali, Valle del Cauca, Colombia",
+        // Specific GEO URI for Google Maps app
+        map_url: "geo:3.4940402337368077,-76.50136182453736?q=K'Leños - Sabor 100% Valluno"
+    };
+
+    const SOCIAL_LINKS = {
+        instagram: "https://www.instagram.com/franquiciasvallunas/",
+        facebook: "https://www.facebook.com/FranquiciasVallunas/",
+        whatsapp: `https://wa.me/${WHATSAPP_NUMBER}`,
+        tiktok: "https://www.tiktok.com/@franquiciasvallunas", // Assuming this is correct
+        website: "https://www.kleños.com/"
+    };
+
+    const MENU_ITEMS = [
+        { id: 1, name: "🔥 2x1 Combinado (Hamburguesa o Perro)", category: "Promos", price: 18.90 },{ id: 2, name: "🍔 Hamburguesa Especial", category: "Hamburguesas", price: 10.50 },{ id: 3, name: "🍔 Hamburguesa Especial (Tocineta y Queso)", category: "Hamburguesas", price: 13.50 },{ id: 4, name: "🍔 Hamb. con Filete de Pollo Apanado", category: "Hamburguesas", price: 15.90 },{ id: 5, name: "🍔 Hamburguesa Mixta", category: "Hamburguesas", price: 19.50 },{ id: 6, name: "🫓 Arepa Burger", category: "Hamburguesas", price: 14.90 },{ id: 7, name: "🌭 Perro Americano", category: "Perros Calientes", price: 10.50 },{ id: 8, name: "🌭 Perro Especial Americano", category: "Perros Calientes", price: 13.50 },{ id: 9, name: "🌭 Perro Americano + Filete de Pollo", category: "Perros Calientes", price: 17.90 },{ id: 10, name: "🥩 Churrasco", category: "Asados", price: 29.50 },{ id: 11, name: "🥩 Carne Asada", category: "Asados", price: 26.90 },{ id: 12, name: "🍗 Filete de Pollo a la Parrilla", category: "Asados", price: 25.90 },{ id: 13, name: "🍗 Filete de Pollo Gratinado", category: "Asados", price: 27.90 },{ id: 14, name: "🍖 Costillas a la BBQ", category: "Asados", price: 23.50 },{ id: 15, name: "🍢 Chuzos (Cerdo, Pollo o Costilla) + Papa", category: "Asados", price: 14.90 },{ id: 16, name: "🐷 Chuleta Valluna (Cerdo o Pollo)", category: "Fritos", price: 25.90 },{ id: 17, name: "🍟 Salchipapa Especial", category: "Fritos", price: 10.50 },{ id: 18, name: "🍟 Salchipapa con Costilla Ahumada", category: "Fritos", price: 15.90 },{ id: 19, name: "🍟 Salchipapa (Costilla + Pollo)", category: "Fritos", price: 25.90 },{ id: 20, name: "👨‍👩‍👧‍👦 Salchipapa Especial Familiar", category: "Fritos", price: 45.50 },{ id: 21, name: "👨‍👩‍👧‍👦 Salchipapa Familiar con Todo", category: "Fritos", price: 67.90 },{ id: 22, name: "🔥 Parrillada o Picada de 4 Carnes", category: "Parrillada", price: 65.90 },{ id: 23, name: "➕ Papa a la Francesa", category: "Adiciones", price: 5.00 },{ id: 24, name: "➕ Papa Criolla", category: "Adiciones", price: 5.00 },{ id: 25, name: "➕ Tocineta o Queso", category: "Adiciones", price: 3.00 },{ id: 26, name: "➕ Adición Carne de Hamburguesa", category: "Adiciones", price: 5.00 },{ id: 27, name: "➕ Adición Filete de Pollo Parrilla", category: "Adiciones", price: 6.90 },{ id: 28, name: "➕ Adición Filete de Pollo Apanado", category: "Adiciones", price: 7.50 }
+    ];
+
+    const PAYMENT_METHODS = [ { name: "Efectivo", icon: "💵" }, { name: "Nequi", icon: "💳" }, { name: "Bancolombia", icon: "💳" }];
+
+    const OPERATING_HOURS = [ // Sunday=0, Monday=1, ..., Saturday=6
+        { day: 0, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Sun
+        { day: 1, start: null, end: null, closeMsg: "Mañana a las 5:00 PM" },    // Mon (Closed)
+        { day: 2, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Tue
+        { day: 3, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Wed
+        { day: 4, start: '17:00', end: '23:00', closeMsg: "Hoy a las 11:00 PM" }, // Thu
+        { day: 5, start: '17:00', end: '24:00', closeMsg: "Hoy a las 12:00 AM" }, // Fri (Open until midnight)
+        { day: 6, start: '17:00', end: '24:00', closeMsg: "Hoy a las 12:00 AM" }  // Sat (Open until midnight)
+    ];
+
+    // =========================================================
+    // 2. GLOBAL STATE VARIABLES
+    // =========================================================
+    let cart = [];
+    let customerName = "";
+    let customerPhone = "";
+    let selectedDelivery = null;
+    let deliveryAddress = "";
+    let selectedPayment = null;
+    let currentOrderNumber = null;
+    let currentFilter = "all";
+    let isScheduled = false;
+
+    // =========================================================
+    // 3. DOM ELEMENT REFERENCES (Cached for performance)
+    // =========================================================
+    let menuView, cartView, confirmationView, locationView, productList, cartItemsContainer,
+        cartTotalEl, cartCountEl, emptyCartMessage, customerNameInput, customerPhoneInput,
+        deliveryOptions, addressInputContainer, addressInput, paymentMethodsContainer,
+        paymentProofNotice, sendOrderBtn, newOrderBtn, locationBtn, openMapsBtn, copyAddressBtn,
+        navMenuBtn, navCartBtn, navFooter, filtersSection, categoryBtns, operatingStatusBox,
+        statusIcon, statusMessageMain, statusMessageSecondary, deliveryTimeNowOption,
+        deliveryTimeScheduleOption, scheduleInputContainer, scheduledDateInput,
+        scheduledTimeInput, scheduleWarning, ticketCanvas;
+
+    function cacheDOMElements() {
+        menuView = document.getElementById('menu-view');
+        cartView = document.getElementById('cart-view');
+        confirmationView = document.getElementById('confirmation-view');
+        locationView = document.getElementById('location-view');
+        productList = document.getElementById('product-list');
+        cartItemsContainer = document.getElementById('cart-items-container');
+        cartTotalEl = document.getElementById('cart-total');
+        cartCountEl = document.getElementById('cart-count');
+        emptyCartMessage = document.getElementById('empty-cart-message');
+        customerNameInput = document.getElementById('customer-name-input');
+        customerPhoneInput = document.getElementById('customer-phone-input');
+        deliveryOptions = document.getElementById('delivery-options');
+        addressInputContainer = document.getElementById('address-input-container');
+        addressInput = document.getElementById('address-input');
+        paymentMethodsContainer = document.getElementById('payment-methods-container');
+        paymentProofNotice = document.getElementById('payment-proof-notice');
+        sendOrderBtn = document.getElementById('send-order-btn');
+        newOrderBtn = document.getElementById('new-order-btn');
+        locationBtn = document.getElementById('location-btn');
+        openMapsBtn = document.getElementById('open-maps-btn');
+        copyAddressBtn = document.getElementById('copy-address-btn');
+        navMenuBtn = document.getElementById('nav-menu-btn');
+        navCartBtn = document.getElementById('nav-cart-btn');
+        navFooter = document.getElementById('nav-footer');
+        filtersSection = document.getElementById('filters-section');
+        categoryBtns = document.querySelectorAll('.category-btn');
+        operatingStatusBox = document.getElementById('operating-status-box');
+        statusIcon = document.getElementById('status-icon');
+        statusMessageMain = document.getElementById('status-message-main');
+        statusMessageSecondary = document.getElementById('status-message-secondary');
+        deliveryTimeNowOption = document.getElementById('delivery-time-now-option');
+        deliveryTimeScheduleOption = document.getElementById('delivery-time-schedule-option');
+        scheduleInputContainer = document.getElementById('schedule-input-container');
+        scheduledDateInput = document.getElementById('scheduled-date-input');
+        scheduledTimeInput = document.getElementById('scheduled-time-input');
+        scheduleWarning = document.getElementById('schedule-warning');
+        ticketCanvas = document.getElementById('ticketCanvas');
+    }
+
+    // =========================================================
+    // 4. HELPER FUNCTIONS
+    // =========================================================
+    const formatMenuPrice = (price) => `$${price.toFixed(1)}K`;
+    const formatRealAmount = (realAmount) => `$${realAmount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+    /** Converts Data URL (Base64) to Blob */
+    const b64toBlob = (dataURL, mimeType) => {
+        const base64 = dataURL.split(',')[1];
+        if (!base64) return null; // Handle cases where split fails
+        try {
+            const binary = atob(base64);
+            const array = [];
+            for (let i = 0; i < binary.length; i++) {
+                array.push(binary.charCodeAt(i));
+            }
+            return new Blob([new Uint8Array(array)], { type: mimeType });
+        } catch (e) {
+            console.error("Error decoding base64 string:", e);
+            return null;
+        }
+    };
+
+    /** Wraps text onto a canvas context */
+    const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+        if (!text || text.trim() === '') return y;
+        const words = text.split(' ');
+        let line = '';
+        let currentY = y;
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = ctx.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                ctx.fillText(line.trim(), x, currentY);
+                line = words[n] + ' ';
+                currentY += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line.trim(), x, currentY);
+        return currentY + lineHeight;
+    };
+
+    /** Generates a random 6-digit order number */
+    const generateOrderNumber = () => Math.floor(100000 + Math.random() * 900000);
+
+    // =========================================================
+    // 5. CORDOVA PLUGIN INTEGRATION FUNCTIONS
+    // =========================================================
+
+    /** Saves ticket image to app's cache directory (NO PERMISSIONS NEEDED) */
+    const saveTicketImage = (dataURL, fileName) => {
+        return new Promise((resolve, reject) => {
+            // Ensure necessary Cordova APIs are available
+            if (!window.cordova || !window.cordova.file || !window.resolveLocalFileSystemURL) {
+                console.error("Cordova File plugin not ready.");
+                return reject("Plugin File no listo.");
+            }
+            if (typeof b64toBlob !== 'function') {
+                return reject("b64toBlob no definido.");
+            }
+
+            const blob = b64toBlob(dataURL, 'image/png');
+            if (!blob) {
+                 return reject("Error creating blob from image data.");
+            }
+            // Use cache directory - it's always writable without specific permissions
+            const storagePath = cordova.file.cacheDirectory;
+
+            window.resolveLocalFileSystemURL(storagePath, (dirEntry) => {
+                dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
+                    fileEntry.createWriter((fileWriter) => {
+                        fileWriter.onwriteend = () => {
+                            console.log(`Ticket guardado en caché: ${fileEntry.nativeURL}`);
+                            resolve(fileEntry.nativeURL); // Resolve with the native file path
+                        };
+                        fileWriter.onerror = (e) => {
+                            console.error(`Error de escritura: ${e.toString()}`);
+                            reject(e);
+                        };
+                        fileWriter.write(blob);
+                    }, (err) => { console.error("Error creating FileWriter:", err); reject(err); });
+                }, (err) => { console.error("Error getting File:", err); reject(err); });
+            }, (err) => { console.error("Error resolving Cache Directory URL:", err); reject(err); });
+        });
+    };
+
+    /** Shares message and image file via WhatsApp using SocialSharing plugin */
+    const shareTicketOnWhatsApp = (message, filePath) => {
+        console.log("=== INICIO shareTicketOnWhatsApp ===");
+        console.log("Message:", message.substring(0, 100) + "...");
+        console.log("File path:", filePath);
+    
+        const plainMessage = decodeURIComponent(message);
+
+        if (window.plugins && window.plugins.socialsharing) {
+            // USAR shareViaWhatsAppToReceiver para enviar directamente a un número
+            // Esto evita el selector de apps de Android
+            window.plugins.socialsharing.shareViaWhatsAppToReceiver(
+                WHATSAPP_NUMBER,     // Número de destino (sin +)
+                plainMessage,        // Mensaje
+                filePath,           // Archivo de imagen
+                null,               // URL (no necesaria)
+                () => {
+                    console.log('✅ Compartido exitosamente vía WhatsApp');
+                    // NO mostrar alert aquí, ya que el usuario verá WhatsApp abierto
+                },
+                (errormsg) => {
+                    console.error('❌ Error al compartir vía WhatsApp:', errormsg);
+                
+                    // Si falla, intentar con método alternativo
+                    console.log("⚠️ Intentando método alternativo...");
+                
+                    // Método alternativo: Abrir WhatsApp con URL scheme
+                    if (window.cordova && cordova.InAppBrowser) {
+                        const whatsappUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${message}`;
+                        cordova.InAppBrowser.open(whatsappUrl, '_system');
+                    
+                        // Mostrar alerta explicando que deben adjuntar la imagen manualmente
+                        setTimeout(() => {
+                            alert("⚠️ Por favor, adjunta manualmente la imagen del ticket que se guardó en tu dispositivo.");
+                        }, 500);
+                    } else {
+                        alert("❌ Error al intentar abrir WhatsApp. Verifica que esté instalado.");
+                    }
+                }
+            );
+        } else {
+            console.warn("❌ Plugin SocialSharing no disponible.");
+            alert("Plugin de compartir no disponible. Reinstala la app.");
+        }
+    };
+
+    /** Handles opening external links (http, geo, mailto, app protocols) in the system browser/app */
+    function handleExternalLinks() {
+        if (!window.cordova || !cordova.InAppBrowser) {
+            console.warn("InAppBrowser plugin not available, external links might open in WebView.");
+            return;
+        }
+
+        document.addEventListener('click', function(event) {
+            let targetElement = event.target;
+
+            // Find the nearest parent anchor tag
+            while (targetElement && targetElement.tagName !== 'A') {
+                targetElement = targetElement.parentElement;
+            }
+
+            if (targetElement && targetElement.href) {
+                const href = targetElement.getAttribute('href');
+                // Check if it's an external link (http, https, geo, mailto, tel, etc.)
+                // Or if it has target="_system" explicitly set (good practice)
+                if (href.startsWith('http') || href.startsWith('geo:') || href.startsWith('mailto:') || href.startsWith('tel:') || targetElement.getAttribute('target') === '_system') {
+                    // Prevent the default action (opening in WebView)
+                    event.preventDefault();
+                    // Open in system browser or appropriate app
+                    cordova.InAppBrowser.open(href, '_system');
+                }
+                // Let internal links (like "#") behave normally
+            }
+        }, false);
+    }
+
+    // =========================================================
+    // 6. APPLICATION LOGIC FUNCTIONS (Rendering, Cart, Validation, etc.)
+    // =========================================================
+
+    const getOperatingStatus = (checkTime) => {
+        const now = checkTime || new Date(); const day = now.getDay(); const hours = now.getHours(); const minutes = now.getMinutes(); const schedule = OPERATING_HOURS[day]; if (!schedule.start) { let nextDayIndex = 2; if(day === 6) nextDayIndex = 0; const nextOpenDay = new Date(now); nextOpenDay.setDate(now.getDate() + (nextDayIndex - day + 7) % 7); const nextDayName = nextOpenDay.toLocaleDateString('es-ES', { weekday: 'long' }); return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: `${nextDayName} a las 5:00 PM` }; } const [startHour, startMinute] = schedule.start.split(':').map(Number); const [endHour, endMinute] = schedule.end.split(':').map(Number); const currentTimeInMinutes = hours * 60 + minutes; const startTimeInMinutes = startHour * 60 + startMinute; const endTimeInMinutes = (endHour === 24 ? 24 * 60 : endHour * 60) + endMinute; if (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes) { return { isOpen: true, status: "ABIERTO", nextClose: `Cierre: ${schedule.closeMsg}` }; } else if (currentTimeInMinutes < startTimeInMinutes) { return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: `Hoy a las ${schedule.start.replace(':00', '').replace('17:00', '5:00 PM')}` }; } else { const nextDayIndex = (day + 1) % 7; const nextOpenDay = new Date(now); nextOpenDay.setDate(now.getDate() + 1); let nextOpen = OPERATING_HOURS[nextDayIndex].start ? nextOpenDay.toLocaleDateString('es-ES', { weekday: 'long' }) + ' a las 5:00 PM' : 'Martes a las 5:00 PM'; return { isOpen: false, status: "En este momento estamos tomando un breve descanso. 😴", nextOpen: nextOpen }; }
+    };
+    const updateOperatingStatusDisplay = () => {
+        const status = getOperatingStatus(); // operatingStatusBox.className = 'p-3 border-2 rounded-xl text-center shadow-lg mx-3 mt-3';
+        operatingStatusBox.classList.remove('bg-green-100', 'border-green-500', 'bg-yellow-100', 'border-yellow-600'); if (status.isOpen) { operatingStatusBox.classList.add('bg-green-100', 'border-2', 'border-green-500'); statusIcon.textContent = '✅'; statusMessageMain.textContent = `¡Estamos ${status.status} ahora! Haz tu pedido.`; statusMessageSecondary.textContent = status.nextClose; } else { operatingStatusBox.classList.add('bg-yellow-100', 'border-2', 'border-yellow-600'); statusIcon.textContent = '🌤️🌥️☁️🌧️☁️🌥️🌤️'; statusMessageMain.textContent = `¡Hola! ${status.status}`; statusMessageSecondary.textContent = `Abrimos ${status.nextOpen}. ¡Aún puedes programar tu pedido para que sea de los primeros! 😉.`; }
+    };
+    const isScheduledTimeValid = (date, time) => {
+        if (!date || !time) return false; const scheduledDateTime = new Date(`${date}T${time}:00`); const scheduledDay = scheduledDateTime.getDay(); const scheduledHours = scheduledDateTime.getHours(); const scheduledMinutes = scheduledDateTime.getMinutes(); const schedule = OPERATING_HOURS[scheduledDay]; if (!schedule.start) return false; const [startHour, startMinute] = schedule.start.split(':').map(Number); const [endHour, endMinute] = schedule.end.split(':').map(Number); const scheduledTimeInMinutes = scheduledHours * 60 + scheduledMinutes; const startTimeInMinutes = startHour * 60 + startMinute; const endTimeInMinutes = (endHour === 24 ? 24 * 60 : endHour * 60) + endMinute; return scheduledTimeInMinutes >= startTimeInMinutes && scheduledTimeInMinutes < endTimeInMinutes;
+    };
+    const checkScheduleInputs = () => {
+        const date = scheduledDateInput.value; const time = scheduledTimeInput.value; if (isScheduled && date && time) { const isValid = isScheduledTimeValid(date, time); scheduleWarning.classList.toggle('hidden', isValid); return isValid; } scheduleWarning.classList.add('hidden'); return true;
+    };
+    const renderMenu = () => {
+        productList.innerHTML = ''; const filteredItems = currentFilter === 'all' ? MENU_ITEMS : MENU_ITEMS.filter(i => i.category === currentFilter); if(filteredItems.length === 0){ productList.innerHTML = `<p class="text-center text-gray-500 col-span-1">No hay productos en esta categoría.</p>`; return; } filteredItems.forEach(item => { const card = document.createElement('div'); card.className = "bg-white border-2 border-black rounded-lg p-3 flex justify-between items-center shadow-md"; card.innerHTML = `<div class="flex-1 pr-2"><h3 class="text-base font-bold">${item.name}</h3><p class="text-gray-800 font-semibold text-sm">${formatMenuPrice(item.price)}</p></div><button data-id="${item.id}" class="add-to-cart-btn bg-red-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transform hover:scale-110 transition-transform text-sm">+ Agregar</button>`; productList.appendChild(card); });
+    };
+    const renderCart = () => {
+        cartItemsContainer.innerHTML = ''; if (cart.length === 0) { emptyCartMessage.classList.remove('hidden'); cartItemsContainer.classList.add('hidden'); } else { emptyCartMessage.classList.add('hidden'); cartItemsContainer.classList.remove('hidden'); cart.forEach(item => { const realPrice = item.price * 1000; const subtotal = realPrice * item.quantity; const element = document.createElement('div'); element.className = "bg-gray-50 border border-gray-200 rounded-lg p-2.5"; element.innerHTML = `<div class="flex justify-between items-start"><div><p class="font-bold text-sm">${item.name}</p><p class="text-xs text-gray-600">${formatRealAmount(realPrice)} c/u</p></div><p class="font-bold text-base text-red-600">${formatRealAmount(subtotal)}</p></div><div class="flex items-center justify-between mt-2"><div class="flex items-center space-x-2"><button data-id="${item.id}" data-op="-" class="quantity-change-btn bg-gray-200 w-7 h-7 rounded-full font-bold text-base">-</button><span class="font-bold w-7 text-center text-sm">${item.quantity}</span><button data-id="${item.id}" data-op="+" class="quantity-change-btn bg-gray-200 w-7 h-7 rounded-full font-bold text-base">+</button><button data-id="${item.id}" class="remove-item-btn text-gray-500 hover:text-red-600 transition-colors ml-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div></div><textarea data-id="${item.id}" class="note-input w-full mt-2 p-2 border border-gray-300 rounded-lg text-xs" placeholder="Indicaciones especiales (ej: sin cebolla)...">${item.note || ''}</textarea>`; cartItemsContainer.appendChild(element); }); } updateCartTotal(); updateCartCount();
+    };
+    const renderPaymentMethods = () => {
+        paymentMethodsContainer.innerHTML = ''; PAYMENT_METHODS.forEach(method => { const button = document.createElement('button'); button.dataset.value = method.name; button.className = 'payment-option w-full text-left p-2.5 border-2 border-gray-300 rounded-lg flex items-center space-x-2 transition-all'; button.innerHTML = `<span class="text-lg">${method.icon}</span><span class="font-semibold text-sm">${method.name}</span>`; paymentMethodsContainer.appendChild(button); });
+    };
+    const renderSocialLinks = () => {
+        const container = document.getElementById('social-links-container');
+        // Combined onclick logic for attempting app URI then fallback to web URL
+        const createLinkHandler = (appUri, webUrl) => {
+            return `try { window.location='${appUri}'; setTimeout(function(){ window.open('${webUrl}', '_system'); }, 600); } catch(e) { window.open('${webUrl}', '_system'); } return false;`;
+        };
+        container.innerHTML = `
+            <a href="#" onclick="${createLinkHandler('instagram://user?username=franquiciasvallunas', SOCIAL_LINKS.instagram)}" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.584.069-4.85c.149-3.225 1.664-4.771 4.919-4.919C8.416 2.175 8.796 2.163 12 2.163m0-2.163C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98C15.667.014 15.259 0 12 0zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/></svg></a>
+            <a href="#" onclick="${createLinkHandler('fb://facewebmodal/f?href=' + SOCIAL_LINKS.facebook, SOCIAL_LINKS.facebook)}" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+            <a href="#" onclick="${createLinkHandler('whatsapp://send?phone=' + WHATSAPP_NUMBER, SOCIAL_LINKS.whatsapp)}" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99 0-3.903-.52-5.687-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.267.655 4.398 1.803 6.182l-.341 1.236 1.254-.328zM9.062 7.032c-.092-.158-.297-.184-.452-.184-.132 0-.279.006-.411.006-.151 0-.393.072-.601.297-.229.252-.866 1.011-.866 2.474s.885 2.868 1.004 3.064c.124.19 1.764 2.951 4.298 4.251 2.108 1.086 2.857.944 3.482.903.729-.048 1.503-.615 1.711-1.206.212-.604.212-1.115.152-1.233-.06-.124-.216-.19-.435-.318s-1.29-.714-1.494-.812c-.204-.099-.351-.158-.498.158-.146.315-.563.714-.689.869-.126.152-.252.179-.47.065-.218-.113-1.002-.41-1.892-1.285-.712-.689-1.227-1.688-1.353-1.969-.124-.282-.016-.443.138-.59.138-.132.302-.351.452-.524.146-.17.195-.297.294-.494.099-.19.049-.375-.015-.524-.065-.147-.594-1.599-.812-2.181z"/></svg></a>
+            <a href="#" onclick="${createLinkHandler('tiktok://user/profile/7238343093483815941', SOCIAL_LINKS.tiktok)}" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 448 512"><path d="M448 209.91a210.06 210.06 0 0 1-122.77-39.25V349.38A162.55 162.55 0 1 1 185 188.31V278.2a74.62 74.62 0 1 0 52.23 71.18V0l88 0a121.18 121.18 0 0 0 1.86 22.17h0A122.18 122.18 0 0 0 381 102.39a121.43 121.43 0 0 0 67 20.14Z"/></svg></a>
+            <a href="#" onclick="window.open('${SOCIAL_LINKS.website}', '_system'); return false;" class="text-black hover:text-red-600 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v-.07zM13 15v-1c0-1.1-.9-2-2-2h-1V9h1c1.1 0 2-.9 2-2V6.1c1.79.45 3.29 1.73 4.16 3.42-.32.06-.63.15-.92.28-.9.39-1.92.6-3.24.6h-1v3h1c1.32 0 2.34.21 3.24.6.29.13.59.22.92.28C16.29 13.27 14.79 14.55 13 14.99V15zm6.79-1.79c.13.58.21 1.17.21 1.79 0 4.08-3.05 7.44-7 7.93V17c1.1 0 2-.9 2-2v-1l4.79-4.79z"/></svg></a>
+        `;
+    };
+
+    const updateCartTotal = () => { const total = cart.reduce((sum, item) => sum + (item.price * 1000) * item.quantity, 0); cartTotalEl.textContent = formatRealAmount(total); };
+    const updateCartCount = () => { const count = cart.reduce((sum, item) => sum + item.quantity, 0); cartCountEl.textContent = count; cartCountEl.classList.toggle('hidden', count === 0); };
+    const addToCart = (productId) => { const product = MENU_ITEMS.find(p => p.id === productId); const cartItem = cart.find(item => item.id === productId); if (cartItem) { cartItem.quantity++; } else { cart.push({ ...product, quantity: 1, note: '' }); } renderCart(); };
+    const handleQuantityChange = (productId, operation) => { const itemIndex = cart.findIndex(item => item.id === productId); if (itemIndex > -1) { if (operation === '+') { cart[itemIndex].quantity++; } else if (operation === '-' && cart[itemIndex].quantity > 1) { cart[itemIndex].quantity--; } else if (operation === '-') { cart.splice(itemIndex, 1); } } renderCart(); };
+    const removeFromCart = (productId) => { cart = cart.filter(item => item.id !== productId); renderCart(); };
+    const updateNote = (productId, note) => { const item = cart.find(item => item.id === productId); if (item) { item.note = note; } };
+    const switchView = (viewName) => { [menuView, cartView, confirmationView, locationView].forEach(view => { if (view) { view.classList.toggle('hidden-view', view.id !== viewName); } }); navFooter.style.display = viewName === 'confirmation-view' ? 'none' : 'flex'; filtersSection.style.display = viewName === 'menu-view' ? 'block' : 'none'; window.scrollTo(0, 0); };
+
+    const validateOrder = () => { if(cart.length===0){alert('Tu carrito está vacío. Agrega productos para continuar.');return false;} if (customerName.trim() === '') { alert('Por favor, ingresa tu nombre.'); customerNameInput.focus(); return false; } if (customerPhone.trim() === '' || !/^\d{7,15}$/.test(customerPhone.trim())) { alert('Por favor, ingresa un número de WhatsApp válido (solo números, sin espacios ni símbolos).'); customerPhoneInput.focus(); return false; } if (!isScheduled) { const status = getOperatingStatus(); if (!status.isOpen) { alert(`Estamos cerrados ahora. Para poder hacer tu pedido, por favor, selecciona la opción "Programar para después" y elige una hora válida.`); return false; } } else { if (!scheduledDateInput.value || !scheduledTimeInput.value) { alert('Por favor, selecciona una fecha y hora para programar tu pedido.'); return false; } if (!checkScheduleInputs()) { alert('La hora que seleccionaste está fuera de nuestro horario de servicio. Por favor, selecciona una hora válida (Domingos a Jueves: 5 PM - 11 PM / Viernes y Sábados: 5 PM - 12 AM).'); return false; } const scheduledDateTime = new Date(`${scheduledDateInput.value}T${scheduledTimeInput.value}:00`); if (scheduledDateTime < new Date()) { alert('La hora programada no puede ser en el pasado.'); return false; } if (selectedPayment === 'Efectivo') { alert('Para pedidos programados (reservas), el pago debe ser en línea (Nequi/Bancolombia) para confirmar tu pedido.'); return false; } } if(!selectedDelivery){alert('Por favor, selecciona un tipo de entrega.');return false;} if(selectedDelivery==='A Domicilio'&&deliveryAddress.trim()===''){alert('Por favor, ingresa tu dirección de domicilio.');addressInput.focus();return false;} if(!selectedPayment){alert('Por favor, selecciona un método de pago.');return false;} return true; };
+    const formatWhatsAppMessage = () => { let msg = `🛍️ *NUEVO PEDIDO #${currentOrderNumber}*\n\n`; if (isScheduled) { const date = new Date(`${scheduledDateInput.value}T${scheduledTimeInput.value}:00`); const dateStr = date.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const timeStr = date.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }); msg += `⏰ *PEDIDO PROGRAMADO (RESERVA)*\n`; msg += `Día: ${dateStr}\n`; msg += `Hora: ${timeStr}\n\n`; } else { msg += `⏰ *ENTREGA INMEDIATA:*\n`; msg += `Tan pronto como sea posible.\n(Hora de envío: ${new Date().toLocaleTimeString('es-CO')})\n\n`; } msg += `👤 *CLIENTE:*\n`; msg += `Nombre: ${customerName.trim()}\n`; msg += `Teléfono: ${customerPhone.trim()}\n\n`; msg += `📋 *DETALLE DEL PEDIDO:*\n`; cart.forEach((item, index) => { const realPrice = item.price * 1000; const subtotal = item.quantity * realPrice; msg += `${index+1}. *${item.name}*\n   Cantidad: ${item.quantity}\n   Precio: ${formatRealAmount(realPrice)} c/u\n   Subtotal: ${formatRealAmount(subtotal)}\n`; if(item.note.trim()!==''){msg+=`   📝 Nota: ${item.note.trim()}\n`;} msg+='\n'; }); const total = cart.reduce((sum,item)=>(sum+(item.price*1000)*item.quantity),0); msg+=`💰 *TOTAL: ${formatRealAmount(total)}*\n\n`; let deliveryIcon=''; switch(selectedDelivery){ case 'A Domicilio': deliveryIcon='🏠'; break; case 'Para Recoger en Caja': deliveryIcon='🥡'; break; case 'Comer en el Establecimiento': deliveryIcon='🍽️'; break;} msg+=`📦 *TIPO DE ENTREGA:* ${deliveryIcon} ${selectedDelivery}\n`; if(selectedDelivery==='A Domicilio'&&deliveryAddress){msg+=`📍 Dirección: ${deliveryAddress.trim()}\n`;} msg+=`\n💳 *MÉTODO de PAGO:* ${selectedPayment}\n`; if(isScheduled || selectedPayment!=='Efectivo'){msg+=`📎 Comprobante enviado vía WhatsApp\n`;} msg+=`\n`; return encodeURIComponent(msg); };
+    const resetApp = () => { cart=[]; customerName = ""; customerPhone = ""; selectedDelivery=null; deliveryAddress=""; selectedPayment=null; currentOrderNumber=null; isScheduled = false; customerNameInput.value = ""; customerPhoneInput.value = ""; addressInput.value=""; document.querySelectorAll('.time-option').forEach(el => el.classList.remove('border-yellow-400', 'border-4')); deliveryTimeNowOption.classList.add('border-yellow-400', 'border-4'); scheduleInputContainer.classList.add('hidden'); scheduleWarning.classList.add('hidden'); scheduledDateInput.value = ''; scheduledTimeInput.value = ''; addressInputContainer.classList.add('hidden'); document.querySelectorAll('.delivery-option.border-yellow-400').forEach(el=>{el.classList.remove('border-yellow-400','border-4'); el.classList.add('border-gray-300','border-2');}); document.querySelectorAll('.payment-option.border-yellow-400').forEach(el=>{el.classList.remove('border-yellow-400','border-4'); el.classList.add('border-gray-300','border-2');}); paymentProofNotice.classList.add('hidden'); renderCart(); switchView('menu-view'); };
+
+    const drawTicketOnCanvas = () => {
+        const ctx = ticketCanvas.getContext('2d'); const canvasWidth = 800; const padding = 50; let currentY = 0; let estimatedHeight = 400; cart.forEach(item => { estimatedHeight += 45; if (item.note && item.note.trim().length > 0) { const noteLines = Math.ceil(ctx.measureText(`Nota: ${item.note.trim()}`).width / (canvasWidth - padding * 2 - 15)); estimatedHeight += noteLines * 30; } }); estimatedHeight += 180; if (deliveryAddress) estimatedHeight += 40; estimatedHeight += 120; ticketCanvas.width = canvasWidth; ticketCanvas.height = estimatedHeight; ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvasWidth, ticketCanvas.height); currentY = padding + 20; ctx.textAlign = 'center'; ctx.fillStyle = '#DC2626'; ctx.font = 'bold 50px Poppins'; currentY = wrapText(ctx, RESTAURANT_NAME, canvasWidth / 2, currentY, canvasWidth - padding, 55); ctx.fillStyle = '#000000'; ctx.font = '32px Poppins'; currentY = wrapText(ctx, `Pedido #${currentOrderNumber}`, canvasWidth / 2, currentY, canvasWidth - padding, 40); ctx.fillStyle = '#555555'; ctx.font = '22px Poppins'; const date = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' }); currentY = wrapText(ctx, date, canvasWidth / 2, currentY, canvasWidth - padding, 30); currentY += 15; ctx.textAlign = 'center'; ctx.fillStyle = '#DC2626'; ctx.font = 'bold 28px Poppins'; if (isScheduled) { const schDate = new Date(`${scheduledDateInput.value}T${scheduledTimeInput.value}:00`); const schDateStr = schDate.toLocaleDateString('es-ES', { weekday: 'long', month: 'numeric', day: 'numeric' }); currentY = wrapText(ctx, `Reserva para: ${schDateStr} a las ${scheduledTimeInput.value}`, canvasWidth / 2, currentY, canvasWidth - padding, 35); } else { currentY = wrapText(ctx, `Entrega: Lo más pronto posible`, canvasWidth / 2, currentY, canvasWidth - padding, 35); } currentY += 15; ctx.textAlign = 'left'; ctx.fillStyle = '#000000'; ctx.font = 'bold 26px Poppins'; currentY = wrapText(ctx, `Cliente: ${customerName.trim()}`, padding, currentY, canvasWidth - padding * 2, 35); ctx.font = '26px Poppins'; currentY = wrapText(ctx, `Tel: ${customerPhone.trim()}`, padding, currentY, canvasWidth - padding * 2, 35); currentY += 15; ctx.beginPath(); ctx.moveTo(padding, currentY); ctx.lineTo(canvasWidth - padding, currentY); ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.stroke(); currentY += 35; ctx.textAlign = 'left'; cart.forEach(item => { const realPrice = item.price * 1000; const subtotal = realPrice * item.quantity; ctx.fillStyle = '#000000'; ctx.font = 'bold 28px Poppins'; const itemY = currentY; currentY = wrapText(ctx, `${item.quantity}x ${item.name}`, padding, currentY, canvasWidth - padding * 2 - 120, 35); ctx.textAlign = 'right'; ctx.fillText(formatRealAmount(subtotal).replace('$', ''), canvasWidth - padding, itemY); ctx.textAlign = 'left'; if (item.note.trim()) { ctx.fillStyle = '#555555'; ctx.font = 'italic 24px Poppins'; currentY = wrapText(ctx, `Nota: ${item.note.trim()}`, padding + 15, currentY, canvasWidth - padding * 2 - 15, 30); } currentY += 10; }); currentY += 15; ctx.beginPath(); ctx.moveTo(padding, currentY); ctx.lineTo(canvasWidth - padding, currentY); ctx.stroke(); currentY += 50; ctx.font = 'bold 42px Poppins'; ctx.fillStyle = '#000000'; ctx.fillText('TOTAL:', padding, currentY); const total = cart.reduce((sum, item) => sum + (item.price * 1000) * item.quantity, 0); ctx.textAlign = 'right'; ctx.fillStyle = '#DC2626'; ctx.fillText(formatRealAmount(total).replace('$', ''), canvasWidth - padding, currentY); ctx.textAlign = 'left'; currentY += 60; ctx.fillStyle = '#000000'; ctx.font = '26px Poppins'; currentY = wrapText(ctx, `Entrega: ${selectedDelivery}`, padding, currentY, canvasWidth - padding * 2, 35); if (selectedDelivery === 'A Domicilio' && deliveryAddress) { currentY = wrapText(ctx, `Dirección: ${deliveryAddress.trim()}`, padding, currentY, canvasWidth - padding * 2, 35); } currentY = wrapText(ctx, `Pago: ${selectedPayment}`, padding, currentY, canvasWidth - padding * 2, 35); ctx.fillStyle = '#FACC15'; ctx.fillRect(0, ticketCanvas.height - 60, canvasWidth, 60); ctx.fillStyle = '#000000'; ctx.font = 'bold 26px Poppins'; ctx.textAlign = 'center'; ctx.fillText('¡Gracias por tu compra!', canvasWidth / 2, ticketCanvas.height - 22); return ticketCanvas.toDataURL('image/png');
+    };
+
+    // =========================================================
+    // 7. EVENT LISTENER SETUP
+    // =========================================================
+    function setupEventListeners() {
+        locationBtn.addEventListener('click', () => switchView('location-view'));
+        copyAddressBtn.addEventListener('click', () => { navigator.clipboard.writeText(LOCATION_DATA.address).then(() => { copyAddressBtn.textContent = '¡Copiado!'; setTimeout(() => { copyAddressBtn.textContent = 'Copiar Dirección'; }, 1500); }); });
+        sendOrderBtn.addEventListener('click', handleSendOrder); // Use named function
+        newOrderBtn.addEventListener('click', resetApp);
+        navMenuBtn.addEventListener('click', () => switchView('menu-view'));
+        navCartBtn.addEventListener('click', () => switchView('cart-view'));
+        categoryBtns.forEach(btn => { btn.addEventListener('click', handleCategoryFilter); }); // Use named function
+        deliveryTimeNowOption.addEventListener('click', handleTimeSelectionNow); // Use named function
+        deliveryTimeScheduleOption.addEventListener('click', handleTimeSelectionSchedule); // Use named function
+        scheduledDateInput.addEventListener('change', checkScheduleInputs);
+        scheduledTimeInput.addEventListener('input', checkScheduleInputs);
+        scheduledTimeInput.addEventListener('change', checkScheduleInputs);
+        productList.addEventListener('click', handleAddProduct); // Use named function
+        cartItemsContainer.addEventListener('click', handleCartActions); // Delegate cart clicks
+        cartItemsContainer.addEventListener('input', handleNoteInput); // Delegate note inputs
+        customerNameInput.addEventListener('input', (e) => { customerName = e.target.value; });
+        customerPhoneInput.addEventListener('input', (e) => { customerPhone = e.target.value; });
+        deliveryOptions.addEventListener('click', handleDeliverySelection); // Delegate delivery clicks
+        addressInput.addEventListener('input', (e) => { deliveryAddress = e.target.value; });
+        paymentMethodsContainer.addEventListener('click', handlePaymentSelection); // Delegate payment clicks
+    }
+
+    // =========================================================
+    // 8. EVENT HANDLER FUNCTIONS (Delegated Logic)
+    // =========================================================
+    async function handleSendOrder() {
+        if (!validateOrder()) return;
+
+        currentOrderNumber = generateOrderNumber();
+        const ticketDataURL = drawTicketOnCanvas();
+        if (!ticketDataURL || ticketDataURL === 'data:,') {
+             alert("❌ Error al generar la imagen del ticket.");
+             return;
+        }
+
+        try {
+            const message = formatWhatsAppMessage();
+            const fileName = `Ticket-Pedido-${currentOrderNumber}.png`;
+
+            // Save image to cache and get native path
+            const filePath = await saveTicketImage(ticketDataURL, fileName);
+
+            // Share using the native path
+            shareTicketOnWhatsApp(message, filePath);
+
+            // Update UI on success
+            document.getElementById('order-number-display').textContent = currentOrderNumber;
+            switchView('confirmation-view');
+
+        } catch (error) {
+            console.error("Error al procesar el pedido o guardar/compartir el ticket:", error);
+            // Provide more specific feedback if possible
+            let userMessage = "❌ Hubo un problema al procesar y enviar el pedido.";
+            if (error && error.toString().includes("Plugin File no listo")) {
+                 userMessage += " Parece que el sistema de archivos no está listo.";
+            } else if (error && error.toString().includes("Error creating blob")) {
+                 userMessage += " Hubo un error generando la imagen.";
+            } else if (error && error.toString().includes("SocialSharing")) {
+                 userMessage = "❌ Error al intentar abrir WhatsApp. ¿Está instalado?";
+            }
+             userMessage += " Por favor, intenta de nuevo.";
+            alert(userMessage);
+        }
+    }
+
+    function handleCategoryFilter(event) {
+        currentFilter = event.target.dataset.category;
+        categoryBtns.forEach(b => {
+            b.classList.toggle('bg-yellow-400', b === event.target);
+            b.classList.toggle('text-black', b === event.target);
+            b.classList.toggle('bg-red-600', b !== event.target);
+            b.classList.toggle('text-white', b !== event.target);
+        });
+        renderMenu();
+    }
+
+    function handleTimeSelectionNow() {
+        document.querySelectorAll('.time-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); });
+        deliveryTimeNowOption.classList.add('border-yellow-400', 'border-4');
+        deliveryTimeNowOption.classList.remove('border-gray-300', 'border-2');
+        isScheduled = false;
+        scheduleInputContainer.classList.add('hidden');
+        scheduleWarning.classList.add('hidden'); // Ensure warning is hidden
+    }
+
+    function handleTimeSelectionSchedule() {
+        document.querySelectorAll('.time-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); });
+        deliveryTimeScheduleOption.classList.add('border-yellow-400', 'border-4');
+        deliveryTimeScheduleOption.classList.remove('border-gray-300', 'border-2');
+        isScheduled = true;
+        scheduleInputContainer.classList.remove('hidden');
+        checkScheduleInputs(); // Check validity immediately
+    }
+
+    function handleAddProduct(event) {
+        const btn = event.target.closest('.add-to-cart-btn');
+        if (btn) {
+            const id = parseInt(btn.dataset.id);
+            addToCart(id);
+        }
+    }
+
+    function handleCartActions(event) {
+        const btn = event.target.closest('.quantity-change-btn, .remove-item-btn');
+        if (!btn) return;
+        const id = parseInt(btn.dataset.id);
+        if (btn.classList.contains('quantity-change-btn')) {
+            const operation = btn.dataset.op; // Use data-op attribute
+            handleQuantityChange(id, operation);
+        } else if (btn.classList.contains('remove-item-btn')) {
+            removeFromCart(id);
+        }
+    }
+
+    function handleNoteInput(event) {
+        const input = event.target.closest('.note-input');
+        if (input) {
+            const id = parseInt(input.dataset.id);
+            updateNote(id, input.value);
+        }
+    }
+
+    function handleDeliverySelection(event) {
+        const btn = event.target.closest('.delivery-option');
+        if (!btn) return;
+        document.querySelectorAll('.delivery-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); });
+        btn.classList.add('border-yellow-400', 'border-4');
+        btn.classList.remove('border-gray-300', 'border-2');
+        selectedDelivery = btn.dataset.value;
+        addressInputContainer.classList.toggle('hidden', selectedDelivery !== 'A Domicilio');
+        if (selectedDelivery !== 'A Domicilio') {
+            deliveryAddress = ""; // Clear address if not needed
+            addressInput.value = "";
+        }
+    }
+
+    function handlePaymentSelection(event) {
+        const btn = event.target.closest('.payment-option');
+        if (!btn) return;
+        document.querySelectorAll('.payment-option').forEach(b => { b.classList.remove('border-yellow-400', 'border-4'); b.classList.add('border-gray-300', 'border-2'); });
+        btn.classList.add('border-yellow-400', 'border-4');
+        btn.classList.remove('border-gray-300', 'border-2');
+        selectedPayment = btn.dataset.value;
+        paymentProofNotice.classList.toggle('hidden', selectedPayment === 'Efectivo');
+    }
+
+    // =========================================================
+    // 9. APP INITIALIZATION FUNCTION
+    // =========================================================
+    function initializeApp() {
+        cacheDOMElements(); // Get references to DOM elements
+
+        document.getElementById('restaurant-name-header').textContent = RESTAURANT_NAME;
+        document.getElementById('address-text').textContent = LOCATION_DATA.address;
+
+        const encodedAddress = encodeURIComponent(LOCATION_DATA.address);
+        // Set the specific GEO URI for the Maps button
+        openMapsBtn.href = `geo:3.4940402337368077,-76.50136182453736?q=K\'Leños - Sabor 100% Valluno`;
+        // Corrected iframe URL
+        document.getElementById('gmaps-iframe').src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497.80022739915904!2d-76.50136182453736!3d3.4940402337368077!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e30a10038b99d4f%3A0x8017b7164bfb50f4!2sK'Le%C3%B1os%20-%20Sabor%20100%25%20Valluno!5e0!3m2!1ses-419!2sco!4v1760857589673!5m2!1ses-419!2sco?q=...3?q=${encodedAddress}&zoom=17&output=embed`; 
+         // IMPORTANT: Replace YOUR_API_KEY with your actual Google Maps Embed API key
+
+
+        // Set default category button style
+        categoryBtns[0].classList.add('bg-yellow-400', 'text-black');
+        categoryBtns[0].classList.remove('bg-red-600', 'text-white');
+
+        // Initial setup and periodic update of operating status
+        updateOperatingStatusDisplay();
+        setInterval(updateOperatingStatusDisplay, 60000); // Update every minute
+
+        // Set min date for scheduling input
+        const today = new Date();
+        // Format date as YYYY-MM-DD
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const dd = String(today.getDate()).padStart(2, '0');
+        scheduledDateInput.min = `${yyyy}-${mm}-${dd}`;
+
+        // Initial render calls
+        renderMenu();
+        renderCart();
+        renderPaymentMethods();
+        renderSocialLinks();
+
+        // Setup event listeners for the entire app
+        setupEventListeners();
+
+        // Handle external links specifically for Cordova environment
+        if (window.cordova) {
+            handleExternalLinks();
+        }
+
+        // Show the initial view
+        switchView('menu-view');
+    }
+
+    // =========================================================
+    // 10. CORDOVA/BROWSER STARTUP LOGIC
+    // =========================================================
+
+    /** Main application logic entry point, called after device ready */
+    function startApp() {
+        console.log("Device is ready, starting app initialization...");
+        initializeApp();
+    }
+
+    /** Cordova's main entry point */
+    function onDeviceReady() {
+        console.log("onDeviceReady fired.");
+        
+        // Verificar que los plugins necesarios estén disponibles
+        if (window.cordova && window.cordova.file) {
+            console.log("✓ Plugin File detectado:", cordova.file);
+            console.log("✓ Cache Directory:", cordova.file.cacheDirectory);
+        } else {
+            console.error("✗ Plugin File NO detectado");
+            alert("Error: Plugin de archivos no disponible. Reinstala la app.");
+        }
+        
+        if (window.plugins && window.plugins.socialsharing) {
+            console.log("✓ Plugin SocialSharing detectado");
+        } else {
+            console.warn("✗ Plugin SocialSharing NO detectado");
+        }
+        
+        if (cordova.InAppBrowser) {
+            console.log("✓ Plugin InAppBrowser detectado");
+        } else {
+            console.warn("✗ Plugin InAppBrowser NO detectado");
+        }
+        
+        // Now it's safe to call Cordova plugins and initialize the app logic
+        startApp();
+    }
+
+    // Bootstrap: Check if running in Cordova or browser
+    if (window.cordova) {
+        // Wait for Cordova deviceready event
+        document.addEventListener('deviceready', onDeviceReady, false);
+        console.log("Cordova detected. Waiting for deviceready...");
+    } else {
+        // Running in a standard browser, wait for DOM content
+        document.addEventListener('DOMContentLoaded', startApp, false);
+        console.log("Browser detected. Waiting for DOMContentLoaded...");
+    }
+
+</script>
+
+</body>
+</html>
